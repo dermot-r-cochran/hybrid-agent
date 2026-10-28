@@ -1,0 +1,29 @@
+{
+  "interpret_request": {"service": "checkout", "metric": "latency"},
+  "generate_hypotheses": {
+    "hypotheses": [
+      {
+        "statement": "Commit a3c91f4 replaced the single get_stock_bulk call in checkout/pricing.py with a get_stock call per cart item (an N+1 pattern), so request time now grows with cart size; this fits p95 rising from 125.3 ms to 286.4 ms after the deploy.",
+        "evidence_ids": ["diff:a3c91f4", "derived:checkout:before_after_deploy"]
+      },
+      {
+        "statement": "A new retry policy in checkout/db.yaml is exhausting the connection pool, increasing latency by 300%.",
+        "evidence_ids": ["derived:checkout:before_after_deploy", "logs:checkout:db"]
+      }
+    ],
+    "unknowns": [
+      "Cart-size distribution before and after the deploy (no cart-size data was available)",
+      "Latency of individual inventory get_stock calls"
+    ],
+    "actions": [
+      {
+        "description": "Restore a single get_stock_bulk call in price_cart and keep the per-line stock display",
+        "rationale": "Removes the per-item round trips introduced in a3c91f4"
+      },
+      {
+        "description": "Before changing code, confirm by plotting checkout latency against cart size for requests after 12:00",
+        "rationale": "An N+1 cause predicts latency that scales with item count"
+      }
+    ]
+  }
+}

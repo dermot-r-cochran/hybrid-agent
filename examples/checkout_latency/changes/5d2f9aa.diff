@@ -1,0 +1,9 @@
+commit 5d2f9aa
+    Fix typo in search results heading
+
+diff --git a/search/templates/results.html b/search/templates/results.html
+--- a/search/templates/results.html
++++ b/search/templates/results.html
+@@ -1,1 +1,1 @@
+-<h2>Serach results</h2>
++<h2>Search results</h2>

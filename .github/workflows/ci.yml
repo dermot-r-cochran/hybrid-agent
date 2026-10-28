@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install -e ".[dev]"
+      - run: ruff check .
+      - run: ruff format --check .
+      - run: mypy hybrid_agent tests
+      - run: pytest -q
+      - name: End-to-end demo
+        run: >
+          python -m hybrid_agent "Why did checkout p95 latency go up after the latest deploy?"
+          --evidence examples/checkout_latency
+          --llm-script examples/checkout_latency/fake_llm_responses.json
