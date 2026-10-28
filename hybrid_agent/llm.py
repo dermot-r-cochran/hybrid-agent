@@ -117,7 +117,7 @@ def parse_task(text: str, request: str, services: Sequence[str]) -> Task:
     service, metric = data.get("service"), data.get("metric")
     if not isinstance(service, str) or service not in services:
         raise InvalidLLMOutput(f"unknown service {service!r}")
-    if metric not in {m.value for m in Metric}:
+    if not isinstance(metric, str) or metric not in {m.value for m in Metric}:
         raise InvalidLLMOutput(f"unknown metric {metric!r}")
     return Task(request=request, service=service, metric=Metric(metric))
 

@@ -242,3 +242,69 @@ def test_cli_json_output(capsys: pytest.CaptureFixture[str]) -> None:
     out = json.loads(capsys.readouterr().out)
     assert out["status"] == "awaiting_human_review"
     assert [h["passed_checks"] for h in out["hypotheses"]] == [True, False]
+
+
+# --- regression tests from review ------------------------------------------------------
+
+
+def test_non_string_llm_fields_are_rejected_not_crashing() -> None:
+    llm = FakeLLM({"interpret_request": '{"service": "checkout", "metric": ["latency"]}'})
+    report = controller({LLMOperation.INTERPRET_REQUEST: llm}).investigate("checkout feels bad")
+    assert report.task is None
+    assert any("could not interpret" in u for u in report.unknowns)
+
+
+@pytest.mark.parametrize(
+    "statement",
+    [
+        "p95 fell by -128.6% after the deploy",  # wrong sign
+        "p95 rose to 1,286.4 ms",  # thousands separator must not hide the real value
+        "latency rose to 2.9 s",  # seconds are converted, not ignored
+        "error rate rose by 5 percentage points",
+    ],
+)
+def test_numeric_claims_cannot_slip_past_verification(statement: str) -> None:
+    derived = Evidence(
+        "d",
+        EvidenceKind.DERIVED,
+        "compute",
+        "",
+        {"p95_after_ms": 286.4, "p95_change_pct": 128.6, "error_rate_change_pp": -0.83},
+    )
+    issues = verify_hypothesis(Hypothesis(statement, ["d"]), {"d": derived})
+    assert any("numeric claim" in i for i in issues)
+
+
+def test_equivalent_numeric_claims_pass() -> None:
+    derived = Evidence(
+        "d",
+        EvidenceKind.DERIVED,
+        "compute",
+        "",
+        {"p95_after_ms": 1286.4, "p95_change_pct": 128.6, "error_rate_change_pp": -0.83},
+    )
+    statement = "p95 rose +128.6% to 1,286.4 ms (about 1.29 s); errors fell 0.83 pp"
+    assert verify_hypothesis(Hypothesis(statement, ["d"]), {"d": derived}) == []
+
+
+def test_naive_timestamps_are_treated_as_utc() -> None:
+    assert parse_timestamp("2026-01-01T01:00:00") == parse_timestamp("2026-01-01T01:00:00Z")
+
+
+def test_diff_tool_includes_deleted_files(tmp_path: Path) -> None:
+    (tmp_path / "abc1234.diff").write_text(
+        "diff --git a/old/cache.py b/old/cache.py\ndeleted file mode 100644\n"
+        "--- a/old/cache.py\n+++ /dev/null\n"
+    )
+    deploy = Evidence("d", EvidenceKind.OBSERVATION, "deploy_log", "", {"commit": "abc1234"})
+    [diff] = DiffTool(tmp_path).run(Task("q", "s", Metric.LATENCY), [deploy])
+    assert diff.data["files_changed"] == ["old/cache.py"]
+
+
+def test_unreadable_evidence_becomes_an_unknown(tmp_path: Path) -> None:
+    (tmp_path / "deploys.jsonl").write_text("{not json\n")
+    (tmp_path / "metrics.csv").write_text("timestamp,service,latency_ms,status\n")
+    metrics, tools = local_tools(tmp_path)
+    report = Controller(tools, ["checkout"]).investigate(CHECKOUT_Q)
+    assert any("deploy_log evidence could not be read" in u for u in report.unknowns)
+    assert report.status == "awaiting_human_review"

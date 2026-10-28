@@ -135,7 +135,12 @@ class Controller:
 
     def _gather(self, task: Task, report: Report) -> None:
         for tool in self.tools:
-            found = tool.run(task, report.observations)
+            try:
+                found = tool.run(task, report.observations)
+            except (OSError, ValueError, KeyError) as exc:
+                self._step(report, "gather_evidence", f"{tool.name}: failed: {exc!r}")
+                report.unknowns.append(f"{tool.name} evidence could not be read: {exc!r}")
+                continue
             report.observations.extend(found)
             self._step(report, "gather_evidence", f"{tool.name}: {len(found)} item(s)")
             if not found:
@@ -151,7 +156,7 @@ class Controller:
             comparison = compare_windows(
                 metrics.data["samples"], parse_timestamp(deploy.data["timestamp"])
             )
-        except InsufficientData as exc:
+        except (InsufficientData, ValueError, KeyError) as exc:
             self._step(report, "compare_windows", f"skipped: {exc}")
             report.unknowns.append(f"cannot compare before/after deploy: {exc}")
             return None

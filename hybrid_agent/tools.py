@@ -10,7 +10,7 @@ import csv
 import json
 import re
 from collections.abc import Sequence
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Protocol
 
@@ -24,7 +24,9 @@ class Tool(Protocol):
 
 
 def parse_timestamp(value: str) -> datetime:
-    return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    """Parse an ISO-8601 timestamp; timestamps without a zone are taken as UTC."""
+    parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    return parsed if parsed.tzinfo else parsed.replace(tzinfo=UTC)
 
 
 def find_deploy(evidence: Sequence[Evidence]) -> Evidence | None:
@@ -98,7 +100,7 @@ class MetricsTool:
         ]
 
 
-_CHANGED_FILE = re.compile(r"^\+\+\+ b/(\S+)$", re.MULTILINE)
+_DIFF_HEADER = re.compile(r"^diff --git a/(\S+) b/(\S+)$", re.MULTILINE)
 
 
 class DiffTool:
@@ -120,7 +122,8 @@ class DiffTool:
         if not path.is_file():
             return []
         text = path.read_text()
-        files = _CHANGED_FILE.findall(text)
+        # Both sides of each header, so deleted and renamed files are included.
+        files = list(dict.fromkeys(p for pair in _DIFF_HEADER.findall(text) for p in pair))
         return [
             Evidence(
                 id=f"diff:{commit}",

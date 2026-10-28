@@ -11,13 +11,34 @@ from collections.abc import Iterable
 
 from .models import Evidence, EvidenceKind, Hypothesis, Report
 
-_NUMERIC_CLAIM = re.compile(r"(\d+(?:\.\d+)?)\s*(ms|%)")
+# Signed numbers (optionally with thousands separators) followed by a unit.
+_NUMERIC_CLAIM = re.compile(
+    r"(?<![\w.,])([+-]?\d{1,3}(?:,\d{3})+(?:\.\d+)?|[+-]?\d+(?:\.\d+)?)\s*"
+    r"(ms|milliseconds?|s|secs?|seconds?|%|percent|pp|percentage points?)(?!\w)",
+    re.IGNORECASE,
+)
+# Canonical unit and scale factor for each spelling.
+_UNITS = {
+    "ms": ("ms", 1.0),
+    "millisecond": ("ms", 1.0),
+    "milliseconds": ("ms", 1.0),
+    "s": ("ms", 1000.0),
+    "sec": ("ms", 1000.0),
+    "secs": ("ms", 1000.0),
+    "second": ("ms", 1000.0),
+    "seconds": ("ms", 1000.0),
+    "%": ("%", 1.0),
+    "percent": ("%", 1.0),
+    "pp": ("pp", 1.0),
+    "percentage point": ("pp", 1.0),
+    "percentage points": ("pp", 1.0),
+}
 _FILE_REF = re.compile(r"[\w./-]+\.(?:py|html|js|ts|go|java|sql|ya?ml|json|toml|cfg)\b")
-_UNIT_SUFFIX = {"_ms": "ms", "_pct": "%"}
+_UNIT_SUFFIX = {"_ms": "ms", "_pct": "%", "_pp": "pp"}
 
 
 def _computed_values(evidence: Iterable[Evidence]) -> dict[str, list[float]]:
-    values: dict[str, list[float]] = {"ms": [], "%": []}
+    values: dict[str, list[float]] = {"ms": [], "%": [], "pp": []}
     for e in evidence:
         if e.kind is not EvidenceKind.DERIVED:
             continue
@@ -28,9 +49,15 @@ def _computed_values(evidence: Iterable[Evidence]) -> dict[str, list[float]]:
     return values
 
 
-def _matches(claim: float, candidates: list[float]) -> bool:
-    # Allow for the rounding people (and models) naturally apply when quoting.
-    return any(abs(claim - c) <= max(1.0, 0.02 * abs(c)) for c in candidates)
+def _matches(claim: str, value: float, candidates: list[float]) -> bool:
+    """Signed claims must match in sign; unsigned ones ("fell by 3%") by magnitude."""
+    signed = claim.startswith(("+", "-"))
+
+    def close(c: float) -> bool:
+        # Allow for the rounding people (and models) naturally apply when quoting.
+        return abs(value - (c if signed else abs(c))) <= max(1.0, 0.02 * abs(c))
+
+    return any(close(c) for c in candidates)
 
 
 def _changed_files(evidence: Iterable[Evidence]) -> set[str]:
@@ -50,8 +77,11 @@ def verify_hypothesis(hypothesis: Hypothesis, evidence: dict[str, Evidence]) -> 
 
     computed = _computed_values(evidence.values())
     for number, unit in _NUMERIC_CLAIM.findall(hypothesis.statement):
-        if not _matches(float(number), computed[unit]):
-            issues.append(f"numeric claim {number}{unit} does not match any computed result")
+        canonical, scale = _UNITS[unit.lower()]
+        value = float(number.replace(",", "")) * scale
+        if not _matches(number, value, computed[canonical]):
+            claim = f"{number}{unit}" if unit == "%" else f"{number} {unit}"
+            issues.append(f"numeric claim {claim} does not match any computed result")
 
     changed = _changed_files(evidence.values())
     for ref in _FILE_REF.findall(hypothesis.statement):

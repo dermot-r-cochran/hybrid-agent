@@ -53,7 +53,8 @@ These checks are deterministic. Passing them means a hypothesis is *consistent w
 It does not mean the hypothesis is true.
 
 - Every cited evidence ID exists, and each hypothesis cites at least one.
-- Every `ms` or `%` figure in a hypothesis matches a computed result (allowing for rounding).
+- Every figure with a unit (`ms`, `s`, `%`, `pp`) matches a computed result, allowing for rounding.
+  A figure with a sign must also match in sign.
 - Every file the hypothesis names is in the deployed change.
 - Derived results point to observations that exist.
 - No action has been executed or bypasses human approval. These fields are set by code; the LLM
@@ -163,8 +164,9 @@ The following are not included. Each should be added only when a concrete need s
   and a fixed set of metric keywords.
 - Regression detection compares fixed windows before and after the latest deploy against a fixed
   threshold. It does not test statistical significance or control for traffic mix.
-- Numeric verification only checks `ms` and `%` figures against computed values. File checks only
-  recognise common source-file extensions. Neither check can confirm that a causal claim is
-  correct.
+- Numeric verification only checks figures that have a unit. A number without a sign is compared
+  by magnitude only, so a claim like "fell by 128%" is not caught when the value actually rose.
+  File checks only recognise common source-file extensions. None of these checks can confirm
+  that a causal claim is correct.
 - The evidence and LLM responses are mocks, so they show how the system behaves, not how well a
   real model performs.
