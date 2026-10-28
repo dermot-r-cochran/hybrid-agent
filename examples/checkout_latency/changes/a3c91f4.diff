@@ -1,0 +1,22 @@
+commit a3c91f4
+    Show per-item stock status on the order summary
+
+diff --git a/checkout/pricing.py b/checkout/pricing.py
+--- a/checkout/pricing.py
++++ b/checkout/pricing.py
+@@ -18,9 +18,13 @@ def price_cart(cart, inventory_client):
+-    stock = inventory_client.get_stock_bulk([item.sku for item in cart.items])
+     lines = []
+     for item in cart.items:
+-        available = stock[item.sku]
++        # Fetch fresh stock per item so the summary is always accurate.
++        available = inventory_client.get_stock(item.sku)
+         lines.append(PriceLine(item.sku, item.quantity, item.unit_price, available))
+     return lines
+diff --git a/checkout/templates/order_summary.html b/checkout/templates/order_summary.html
+--- a/checkout/templates/order_summary.html
++++ b/checkout/templates/order_summary.html
+@@ -4,3 +4,4 @@
+   <td>{{ line.sku }}</td>
+   <td>{{ line.quantity }}</td>
++  <td>{{ "In stock" if line.available else "Back-ordered" }}</td>
