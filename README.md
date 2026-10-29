@@ -170,3 +170,10 @@ The following are not included. Each should be added only when a concrete need s
   that a causal claim is correct.
 - The evidence and LLM responses are mocks, so they show how the system behaves, not how well a
   real model performs.
+
+## Disclaimer
+
+This project and the ideas in it are my own, published in a personal capacity. Any intellectual
+property rights that may arise from my employment are retained by **UL Solutions**, as applicable.
+No endorsement, sponsorship, or approval by UL Solutions is implied, and nothing here grants rights
+to any intellectual property owned by UL Solutions beyond what is permitted by law.
