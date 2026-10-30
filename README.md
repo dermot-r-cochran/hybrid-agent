@@ -191,6 +191,10 @@ The following are not included. Each should be added only when a concrete need s
 - The evidence and LLM responses are mocks, so they show how the system behaves, not how well a
   real model performs.
 
+## Related
+
+- Nothing crosses between this repository and the author's other public repositories; how they relate is kept in one map: [RELATED-REPOSITORIES.md](https://github.com/dermot-r-cochran/star-rangers/blob/main/RELATED-REPOSITORIES.md).
+
 ## Disclaimer
 
 This project and the ideas in it are my own, published in a personal capacity. Any intellectual
