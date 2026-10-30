@@ -5,7 +5,8 @@ A deliberately small engineering agent built on one principle:
 > Use the simplest reliable reasoning mechanism for each part of an engineering problem.
 
 The deterministic controller handles the workflow, routing, model choice, calculations and
-verification. An LLM is called only for semantic work: interpreting an ambiguous request,
+verification. A trained decision (classification) model is in scope for closed-set decisions
+that fixed rules cannot make reliably. An LLM is called only for semantic work: interpreting an ambiguous request,
 reading unfamiliar code and proposing hypotheses. Its output is treated as a proposal and checked
 before a human sees it. Nothing is executed. The human makes the decisions.
 
@@ -46,6 +47,26 @@ model assigned to it in configuration (`Controller(models={LLMOperation: LLM})`)
 The choice is explicit and made by people, not by an LLM. If no model is assigned to an
 operation, the agent records an unknown. It does not quietly fall back to a different model. The
 trace records which model handled each call.
+
+### Decision (classification) models
+
+A trained classifier sits between fixed rules and an LLM: it is the mechanism for a decision with a
+closed set of answers that rules cannot make reliably but that does not need language
+understanding. Likely first uses are routing a request to a known service and metric, and judging
+whether a before/after change is a regression where a fixed threshold proves too blunt. None is
+built yet; the first one comes when a concrete case shows the rules failing. The same discipline
+applies as to the LLM:
+
+- Its label set is closed and validated against the same allow-lists as the rules. A label outside
+  the set is an unknown, never a guess.
+- It reports a confidence, and the controller applies an explicit threshold in code. Below it, the
+  decision is recorded as an unknown or passed on to the next mechanism, never silently accepted.
+- The model, its version and its training data are chosen and recorded by people, like the LLM
+  assignments, and the trace names which model made each decision.
+- It is evaluated on held-out examples before it is used, and the evaluation is kept with it. A
+  classifier's output is a derived result, not an observation.
+- Rules still come first. A classifier is used only where a rule has been tried and shown to be
+  insufficient, and an LLM only where a classifier would not do.
 
 ### What verification checks
 
@@ -151,7 +172,6 @@ Two contrasting runs (both covered by tests):
 The following are not included. Each should be added only when a concrete need shows up:
 
 - real LLM providers;
-- classical ML (fixed thresholds have been enough so far);
 - retrieval;
 - multi-agent orchestration;
 - knowledge graphs or formal methods;
