@@ -29,3 +29,18 @@ jobs:
           python -m hybrid_agent "Why did checkout p95 latency go up after the latest deploy?"
           --evidence examples/checkout_latency
           --llm-script examples/checkout_latency/fake_llm_responses.json
+
+  docs:
+    # Standard library only, nothing installed. Fails on a README test citation
+    # that names no test, a broken relative link, or a second front-matter
+    # block. Added 2026-10-31 with the README-proof convention; see
+    # docs/decisions.md.
+    name: docs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Doc check
+        run: python .github/scripts/check_docs.py

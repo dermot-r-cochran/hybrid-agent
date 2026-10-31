@@ -10,7 +10,10 @@ requires-python = ">=3.11"
 dependencies = []
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "ruff>=0.6", "mypy>=1.10"]
+# Exact pins, so a red CI run means the code changed and not the linter. These are
+# the versions the green run of 30 October 2026 installed; raise them on purpose,
+# in a change of their own (docs/decisions.md, 31 October 2026).
+dev = ["pytest==9.2.0", "ruff==0.17.3", "mypy==2.4.1"]
 
 [tool.setuptools]
 packages = ["hybrid_agent"]
