@@ -83,6 +83,38 @@ It does not mean the hypothesis is true.
 
 Malformed LLM output, and provider errors, are turned into unknowns. They are never trusted.
 
+## What the tests prove
+
+Every capability row in this table names the test that proves it (file and test name), or
+says it has no test yet (the README-proof convention, 10 October 2026). A claim without a test
+is written down as such rather than dropped. `.github/scripts/check_docs.py`, run in CI, fails if
+a cited test does not exist, a relative link resolves to nothing, or a Markdown file carries a
+second front-matter block. All tests are in `tests/test_agent.py`.
+
+| Claim | Proved by |
+| --- | --- |
+| Rules parse a request that names a known service and metric; one they cannot place, or that names two services, is left for the LLM | `tests/test_agent.py::test_parse_request_deterministic_and_ambiguous` |
+| Percentiles are interpolated, and an out-of-range percentile is refused | `::test_percentile_interpolates` |
+| Before and after windows are compared and the +20% p95 rule fires on latency, not on error rate | `::test_compare_windows_and_regression_rule` |
+| Too few samples stop the comparison instead of producing a number | `::test_compare_windows_requires_enough_samples` |
+| An LLM-inferred service or metric outside the allow-lists is rejected, as is non-JSON | `::test_parse_task_rejects_values_outside_allow_lists`, `::test_non_string_llm_fields_are_rejected_not_crashing` |
+| The LLM cannot mark an action executed or clear its need for approval; code sets those fields | `::test_parse_hypotheses_accepts_fences_and_fixes_authority_fields`, `::test_verify_report_flags_actions_bypassing_approval` |
+| A hypothesis consistent with the evidence passes verification | `::test_verify_accepts_consistent_hypothesis` |
+| Unknown citations, unmatched figures, files not in the change and an empty citation list are flagged | `::test_verify_flags_bad_citations_numbers_and_files` |
+| Sign, thousands separators, seconds and percentage points are all checked against computed values | `::test_numeric_claims_cannot_slip_past_verification`, `::test_equivalent_numeric_claims_pass` |
+| Derived results point to observations that exist | no test yet (`verify.py` checks it; nothing exercises the failing case) |
+| The worked example end to end: three observations, one derived result, H1 passes and H2 fails, nothing executed, status `awaiting_human_review`, and the trace names the model that handled each LLM call | `::test_regression_investigation_end_to_end` |
+| No regression means no LLM call | `::test_no_regression_means_no_llm_call` |
+| An ambiguous request goes to the model assigned to `interpret_request`, and the inferred task is listed as an unknown to confirm | `::test_ambiguous_request_routes_to_interpretation_model` |
+| A missing model is reported as an unknown, never replaced by another model | `::test_missing_model_is_reported_not_substituted` |
+| Malformed LLM output and provider errors become unknowns, with no hypotheses and no actions | `::test_malformed_or_failing_llm_output_is_not_trusted` |
+| An unreadable evidence file becomes an unknown and the run still ends in human review | `::test_unreadable_evidence_becomes_an_unknown` |
+| The diff tool refuses unsafe commit ids and lists deleted files among the changed ones | `::test_diff_tool_rejects_unsafe_commit_ids`, `::test_diff_tool_includes_deleted_files` |
+| Timestamps without a zone are read as UTC | `::test_naive_timestamps_are_treated_as_utc` |
+| `--json` prints the report with the same verdicts as the text run | `::test_cli_json_output` |
+| The text report shown under *Worked example* | no test yet (CI runs the demo and checks only that it exits cleanly) |
+| Decision (classification) models | no test yet (none is built; see the section above) |
+
 ## Usage
 
 Requires Python 3.11+. No runtime dependencies.
@@ -97,6 +129,11 @@ python -m hybrid_agent "<question>" --evidence examples/checkout_latency \
 No real LLM provider is bundled. `--llm-script` loads scripted responses into a `FakeLLM`. Without
 it, the agent still runs every deterministic and computational step and reports that the LLM step
 was skipped.
+
+The development tools are pinned to exact versions in `pyproject.toml` (`pytest==9.2.0`,
+`ruff==0.17.3`, `mypy==2.4.1`), so a failing check means the code changed, not the tool. The
+reasons behind the design, and what is deliberately not built, are in
+[`docs/decisions.md`](docs/decisions.md).
 
 ## Worked example
 
