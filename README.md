@@ -112,7 +112,7 @@ second front-matter block. All tests are in `tests/test_agent.py`.
 | The diff tool refuses unsafe commit ids and lists deleted files among the changed ones | `::test_diff_tool_rejects_unsafe_commit_ids`, `::test_diff_tool_includes_deleted_files` |
 | Timestamps without a zone are read as UTC | `::test_naive_timestamps_are_treated_as_utc` |
 | `--json` prints the report with the same verdicts as the text run | `::test_cli_json_output` |
-| The text report shown under *Worked example* | no test yet (CI runs the demo and checks only that it exits cleanly) |
+| The text report shown under *Worked example* is what the command prints, line for line, so a change to the output must change the README in the same commit | `::test_worked_example_transcript_matches_readme` |
 | Decision (classification) models | no test yet (none is built; see the section above) |
 
 ## Usage

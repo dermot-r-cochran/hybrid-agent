@@ -244,6 +244,22 @@ def test_cli_json_output(capsys: pytest.CaptureFixture[str]) -> None:
     assert [h["passed_checks"] for h in out["hypotheses"]] == [True, False]
 
 
+# --- the manual ------------------------------------------------------------------------
+
+
+def test_worked_example_transcript_matches_readme(capsys: pytest.CaptureFixture[str]) -> None:
+    """The report under *Worked example* in the README is what the command prints."""
+    readme = (EVIDENCE.parent.parent / "README.md").read_text(encoding="utf-8")
+    block = readme.split("$ python -m hybrid_agent ", 1)[1].split("```", 1)[0]
+    start = block.index("REQUEST: ")
+    command, expected = block[:start], block[start:]
+    assert CHECKOUT_Q in command and SCRIPT.name in command
+
+    assert main([CHECKOUT_Q, "--evidence", str(EVIDENCE), "--llm-script", str(SCRIPT)]) == 0
+    printed = capsys.readouterr().out
+    assert printed.replace("\r\n", "\n").strip() == expected.replace("\r\n", "\n").strip()
+
+
 # --- regression tests from review ------------------------------------------------------
 
 
