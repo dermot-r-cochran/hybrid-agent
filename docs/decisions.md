@@ -254,3 +254,17 @@ coding agent). The prompt is the brief; everything since is held against it.
     about proposed actions, and it stands: the controller still executes
     none. Running the named key command is the one command the package
     runs, only to fetch a key, never to act on the investigation.
+- **Each local instance tracks its own user; metrics are reported per team
+  and squad** (the author, the same day, answering the last open question
+  on issue #11, how baselines are collected).
+  - **Tracked locally:** each user's instance keeps that user's own usage
+    record and the timings behind the person-hours baseline, on that user's
+    machine, as it already keeps their limits. The user can read their own
+    record; no one else's instance can.
+  - **Reported in aggregate:** what leaves an instance is an allowlisted
+    contribution (counts, totals, task kinds, coarse dates; no free text and
+    no money) that is only ever shown summed at squad or team level, under
+    the minimum group size.
+  - **Still to design when #11 is built:** how a contribution reaches the
+    squad or team total without the route itself naming its sender (a pull
+    request, for example, is attributed to whoever opens it).
