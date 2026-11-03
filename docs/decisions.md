@@ -218,3 +218,15 @@ coding agent). The prompt is the brief; everything since is held against it.
   (issue #11) may set weekly ceilings per user, per squad or per team, and
   the lower of the organisation's and the user's number wins, as for the
   other limits.
+- **Quotas may be enforced per GitHub user; reports still never name one**
+  (the author, the same day: quotas can be enforced per individual GitHub
+  user even if not mentioned in the reports). Enforcement and reporting are
+  separate:
+  - **Enforcement:** an organisation policy may set any limit (daily,
+    burst, weekly, 30-day) for an individual GitHub user, as well as for a
+    squad or a team. The lowest number that applies to that user wins.
+  - **Where it is counted:** on the user's own machine, from their own
+    usage record, as the user's own limits already are. A refusal is shown
+    to that user and recorded in their own trace; it is not sent anywhere.
+  - **Reporting:** unchanged. Reports go no finer than a squad or team, the
+    minimum group size holds, and no report shows which user hit a limit.
