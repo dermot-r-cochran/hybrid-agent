@@ -131,3 +131,28 @@ coding agent). The prompt is the brief; everything since is held against it.
 - **No behaviour changes come from review alone.** A review finding with a
   done state becomes an issue; the code changes when the issue is taken up,
   not as a side effect of documenting it (31 October 2026).
+
+## Direction rulings, 3 November 2026
+
+- **This repository is the public face of the idea.** A deterministic
+  controller, an LLM only for semantic steps, an unknown where no model is
+  assigned: the author keeps a private engineering agent built on the same
+  principle, and this is the one that is published. Nothing is mirrored from
+  it; what this repository does it does in its own terms, and the "nothing
+  crosses" ruling above stands.
+- **It will eventually be published as an SDK package** on a public Python
+  feed (PyPI or similar). Not yet: there is no package name, no version
+  policy and no release process, and each of those is a decision for this
+  file when the time comes. Ruling 11 still governs the package: no runtime
+  dependencies.
+- **The package imposes cost limits by default.** Out of the box it makes no
+  model calls: every limit defaults to 0, so a step that would call a model
+  records an unknown, the same unknown the controller already records when
+  no model is assigned to an operation (the README's *Choosing a model for
+  each LLM operation*). A user who assigns a model also sets limits, which are counted in
+  input-equivalent tokens (each token kind weighted by its price relative to
+  base input, with weights per model and ratios only, never prices) per day
+  and per month. A request that would cross either limit is refused before
+  it is sent, and the refusal is an unknown with the reason in the trace.
+  Limits are the user's own numbers. No price, currency or real figure ships
+  in the package, its tests or its docs.
