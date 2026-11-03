@@ -268,3 +268,33 @@ coding agent). The prompt is the brief; everything since is held against it.
   - **Still to design when #11 is built:** how a contribution reaches the
     squad or team total without the route itself naming its sender (a pull
     request, for example, is attributed to whoever opens it).
+- **Contributions are summed by additive masking, with safeguards for
+  changes of membership** (the author, the same day, on issue #11). The
+  problem is the one secret ballots solve: the total is public and
+  checkable, each contribution is private, and the route must not name its
+  sender. Of the three known approaches (a trusted tallier, additive
+  masking, homomorphic tallying), additive masking is chosen: an exact total
+  with no one trusted, and only arithmetic and a shared secret per pair of
+  members, so no runtime dependency (ruling 11).
+  - **How it works:** for each round, every pair of members in a squad or
+    team derives a fresh random mask from a secret they share; one adds it
+    to their contribution and the other subtracts it. Each masked
+    contribution on its own reads as noise; summed, the masks cancel and the
+    total is exact. Masks are never reused between rounds.
+  - **Safeguard 1, a frozen roster.** A round's members are fixed when the
+    round opens, from the organisation's own record (above). Someone who
+    joins mid-round waits for the next one; someone who leaves mid-round
+    voids it.
+  - **Safeguard 2, all or nothing.** A round publishes only if every member
+    of its roster contributed. A missing contribution would leave masks
+    uncancelled, and a partial reveal is never offered, so the round is
+    void and rerun with the roster as it then stands.
+  - **Safeguard 3, no differencing.** Two totals whose rosters differ by
+    one or two people would reveal those people's figures by subtraction.
+    A total is therefore withheld when its roster differs from the last
+    published one by fewer than the minimum group size, and that period is
+    folded into the next publishable one or into the parent team.
+  - **The minimum group size holds for every round,** as for every report.
+  - **Left to the build:** how each pair agrees its shared secret within
+    the standard library, and how a void round is told apart from a quiet
+    one without naming who did not contribute.
