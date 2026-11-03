@@ -50,4 +50,4 @@ A subagent runs on its parent session's model unless the call names another, so 
 
 ## Related repositories
 
-The map of Dermot's public repositories and what crosses between them is `RELATED-REPOSITORIES.md` in `dermot-r-cochran/star-rangers`, linked from the README's *Related* section. Nothing crosses between this repository and the others; private repositories are described there, never named.
+The map of Dermot's public repositories and what crosses between them is `RELATED-REPOSITORIES.md` in `dermot-r-cochran/star-rangers`, linked from the README's *Related* section. Nothing crosses between this repository and the others, with one exception (`docs/decisions.md`, direction rulings of 3 November 2026): design ideas and capabilities may come one way from the author's private engineering agent, rewritten here for a public reader, and never its code, its record or anything from its working environment. Private repositories are described, never named.

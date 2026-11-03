@@ -137,9 +137,27 @@ coding agent). The prompt is the brief; everything since is held against it.
 - **This repository is the public face of the idea.** A deterministic
   controller, an LLM only for semantic steps, an unknown where no model is
   assigned: the author keeps a private engineering agent built on the same
-  principle, and this is the one that is published. Nothing is mirrored from
-  it; what this repository does it does in its own terms, and the "nothing
-  crosses" ruling above stands.
+  principle, and this is the one that is published.
+- **It may learn from the private agent, one way, in design only** (the
+  author, the same day: hybrid-agent may learn from it in terms of design
+  and use a streamlined public-facing version of its capabilities). This
+  narrows the "nothing crosses" ruling above for that one sibling and in
+  that one direction:
+  - **What may cross:** design ideas and capabilities, rewritten here in
+    this repository's own terms, streamlined for a public reader, and each
+    under the rulings above (ruling 11's deferred list and ruling 12's "not
+    for show" still decide whether a capability earns its place).
+  - **What never crosses:** code copied wholesale, its record of rulings,
+    and anything that came from the private agent's working environment
+    (names, figures, logs, examples).
+  - **How it is named:** the private sibling is described, never named, and
+    nothing flows back the other way through this repository.
+- **More languages and deployment environments are in scope in principle.**
+  The controller, the evidence kinds and the verification are not
+  Python-specific, so support for further coding languages and deployment
+  environments is a direction, not a ruling to build. Each one arrives when
+  a concrete need shows it, through ruling 12's clean boundaries rather than
+  a speculative abstraction layer (ruling 11).
 - **It will eventually be published as an SDK package** on a public Python
   feed (PyPI or similar). Not yet: there is no package name, no version
   policy and no release process, and each of those is a decision for this
