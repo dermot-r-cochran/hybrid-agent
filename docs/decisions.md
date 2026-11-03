@@ -230,3 +230,27 @@ coding agent). The prompt is the brief; everything since is held against it.
     to that user and recorded in their own trace; it is not sent anywhere.
   - **Reporting:** unchanged. Reports go no finer than a squad or team, the
     minimum group size holds, and no report shows which user hit a limit.
+- **Keys come through a small key-source contract, and the organisation
+  policy may name the command** (the author, the same day, on issue #11:
+  the key management service depends on the local architecture; asked
+  whether the organisation policy or only the user's local config may name
+  the command that fetches a key, *"Org policy too"*).
+  - **The contract is the package's side, not the service's.** The package
+    never speaks a vendor's key-service API, which would mean a runtime
+    dependency or a client per vendor (ruling 11). A `KeySource` takes a key
+    name and returns the secret or fails; a failure is an unknown with the
+    reason in the trace, never a fallback to another source.
+  - **Two sources ship:** a local file (the default), and a command source,
+    a local command that prints the secret on stdout (an organisation's own
+    vault CLI, for example).
+  - **Either the user's local config or the organisation policy may name
+    the command.** A command named in the policy is approved the way the
+    policy is, by the policy repository's code owners or organisation admins
+    (above).
+  - **What never changes:** the policy holds no secret and no URL for the
+    package to call; secrets are never logged, traced or reported, and are
+    fetched fresh each run, never cached to disk.
+  - **A narrow exception to "nothing is executed".** That founding rule is
+    about proposed actions, and it stands: the controller still executes
+    none. Running the named key command is the one command the package
+    runs, only to fetch a key, never to act on the investigation.
