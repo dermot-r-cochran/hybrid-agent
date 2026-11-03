@@ -151,8 +151,12 @@ coding agent). The prompt is the brief; everything since is held against it.
   no model is assigned to an operation (the README's *Choosing a model for
   each LLM operation*). A user who assigns a model also sets limits, which are counted in
   input-equivalent tokens (each token kind weighted by its price relative to
-  base input, with weights per model and ratios only, never prices) per day
-  and per month. A request that would cross either limit is refused before
-  it is sent, and the refusal is an unknown with the reason in the trace.
+  base input, with weights per model and ratios only, never prices), as an
+  allowance that accrues daily. Unspent allowance rolls over up to a burst
+  cap, under a rolling 30-day cap that holds whatever the bucket holds (the
+  same day, the author: unused daily quota may roll over, subject to a
+  30-day rolling limit). A request that fits neither the bucket nor the
+  rolling cap is refused before it is sent, and the refusal is an unknown
+  with the reason in the trace.
   Limits are the user's own numbers. No price, currency or real figure ships
   in the package, its tests or its docs.
