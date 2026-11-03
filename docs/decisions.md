@@ -187,3 +187,15 @@ coding agent). The prompt is the brief; everything since is held against it.
   and the approver stay in the repository's own history. The rest of #11
   (how the policy file is trusted, per-person views, baseline collection)
   stays open.
+- **The policy lives with the work; the keys stay local** (the author, the
+  same day, answering the second open question on issue #11). The cost
+  policy file lives in the target repository or in a repository of its
+  organisation, so it is trusted the way that repository's other reviewed
+  files are: changed only through a change its approvers (above) accepted.
+  Model keys and credentials never go in the policy or in any repository.
+  They stay in a local file on the user's machine, unless the policy names a
+  key management service, in which case the keys come from that service
+  instead. The policy may name the service; it never holds a key. Which
+  services are supported is decided when one is first needed, under ruling
+  11 (no runtime dependencies). Per-person views and baseline collection on
+  #11 stay open.
