@@ -208,3 +208,13 @@ coding agent). The prompt is the brief; everything since is held against it.
   the package keeps. The minimum group size still holds: a squad smaller
   than it is reported inside its parent team, never alone, so no breakdown
   can single out one person. Baseline collection on #11 stays open.
+- **A weekly quota sits between the daily accrual and the 30-day cap** (the
+  author, the same day: weekly quotas might also be helpful). It is a
+  rolling 7-day cap, counted in the same input-equivalent tokens and derived
+  from the same usage record as the 30-day cap. Like every limit it defaults
+  to 0, so a user who assigns a model sets it too. A request is sent only if
+  it fits the bucket and every rolling cap; otherwise it is refused before it
+  is sent, and the refusal names which limit it hit. An organisation policy
+  (issue #11) may set weekly ceilings per user, per squad or per team, and
+  the lower of the organisation's and the user's number wins, as for the
+  other limits.
