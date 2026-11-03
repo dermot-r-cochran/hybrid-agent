@@ -298,3 +298,19 @@ coding agent). The prompt is the brief; everything since is held against it.
   - **Left to the build:** how each pair agrees its shared secret within
     the standard library, and how a void round is told apart from a quiet
     one without naming who did not contribute.
+- **The bar is relative privacy, not absolute secrecy** (the author, the
+  same day, on issue #11). The aim is that, in ordinary use, no colleague or
+  manager can read one person's figures from what is published. It is not a
+  guarantee against a determined insider, collusion between members, the
+  hosting platform, or someone with access to a member's own machine.
+  What this changes:
+  - **Additive masking and its safeguards stand,** because they are cheap
+    and they make the ordinary case private by construction. They are not
+    required to resist collusion: if members pool their masks they can
+    recover a colleague's figures, and that is accepted.
+  - **The build takes the simplest option that meets the bar** at each point
+    left open above. A pairwise secret may come from a simple exchange
+    rather than a hardened protocol, and a void round may say plainly that
+    it is void, as long as it does not name who was missing.
+  - **The minimum group size and the no-differencing rule stay,** since
+    they are what stop the ordinary reader, not only the determined one.
