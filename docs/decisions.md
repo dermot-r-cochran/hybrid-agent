@@ -178,3 +178,12 @@ coding agent). The prompt is the brief; everything since is held against it.
   with the reason in the trace.
   Limits are the user's own numbers. No price, currency or real figure ships
   in the package, its tests or its docs.
+- **A management approver is a code owner or an organisation admin** (the
+  author, the same day, answering the first open question on issue #11). A
+  change that raises a cost ceiling counts as approved when a code owner of
+  the policy repository, or an admin of the GitHub organisation that holds
+  it, has approved it. The package keeps no list of approvers of its own:
+  who holds either role is the hosting platform's record, so the approval
+  and the approver stay in the repository's own history. The rest of #11
+  (how the policy file is trusted, per-person views, baseline collection)
+  stays open.
