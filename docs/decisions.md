@@ -314,3 +314,9 @@ coding agent). The prompt is the brief; everything since is held against it.
     it is void, as long as it does not name who was missing.
   - **The minimum group size and the no-differencing rule stay,** since
     they are what stop the ordinary reader, not only the determined one.
+- **A trusted collector is rejected; do not re-propose it** (the author, the
+  same day: a collector would be a single point of failure). Relative
+  privacy (above) would have allowed one, but a single component holding
+  every member's figures is one place to fail, to leak and to be pressed
+  for an individual's numbers. Additive masking keeps no such place: no
+  component, and no person, ever holds one member's unmasked figures.
