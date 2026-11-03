@@ -199,3 +199,12 @@ coding agent). The prompt is the brief; everything since is held against it.
   services are supported is decided when one is first needed, under ruling
   11 (no runtime dependencies). Per-person views and baseline collection on
   #11 stay open.
+- **Usage and savings are reported per squad or per team, never per
+  person** (the author, the same day, answering the third open question on
+  issue #11: per-squad or per-team usage would be useful). A report may
+  break usage, limits and savings down by squad or by team, and an
+  organisation ceiling may be set at either level. The grouping comes from
+  the organisation's own record (its GitHub teams, for example), not a list
+  the package keeps. The minimum group size still holds: a squad smaller
+  than it is reported inside its parent team, never alone, so no breakdown
+  can single out one person. Baseline collection on #11 stays open.
