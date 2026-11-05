@@ -89,7 +89,7 @@ Every capability row in this table names the test that proves it (file and test 
 says it has no test yet (the README-proof convention, 10 October 2026). A claim without a test
 is written down as such rather than dropped. `.github/scripts/check_docs.py`, run in CI, fails if
 a cited test does not exist, a relative link resolves to nothing, or a Markdown file carries a
-second front-matter block. All tests are in `tests/test_agent.py`.
+second front-matter block. The tests in this table are in `tests/test_agent.py`.
 
 | Claim | Proved by |
 | --- | --- |
@@ -114,6 +114,27 @@ second front-matter block. All tests are in `tests/test_agent.py`.
 | `--json` prints the report with the same verdicts as the text run | `::test_cli_json_output` |
 | The text report shown under *Worked example* is what the command prints, line for line, so a change to the output must change the README in the same commit | `::test_worked_example_transcript_matches_readme` |
 | Decision (classification) models | no test yet (none is built; see the section above) |
+
+## Design challenges
+
+The cost limits and additive masking in [`docs/decisions.md`](docs/decisions.md) are rulings, not
+code: the package has neither. `examples/cost_control` holds a small sample of each, which is not
+installed and which nothing in the package imports, so that the rulings can be attacked before they
+are built. `tests/test_design_challenges.py` does the attacking. A passing test is a promise that
+held. A test marked `gap` states a promise the design as ruled does not keep: it is expected to
+fail, strictly, so closing the gap in the sample turns the run red until the mark comes off.
+
+| Promise | Result | Challenge |
+| --- | --- | --- |
+| With no limits set, a call is refused before it is sent, and the refusal is an unknown in the report, through the existing controller and no change to it | held | `tests/test_design_challenges.py::test_default_limits_refuse_before_sending` |
+| The bucket and the rolling weekly and 30-day caps all hold over a year of random requests | held, when a request's size is known in advance | `::test_rolling_caps_hold_for_a_year_when_estimates_are_exact` |
+| A rolling cap holds whatever a response turns out to cost | **gap** | `::test_a_rolling_cap_holds_when_the_response_is_larger_than_estimated` |
+| The lowest limit wins, and a user cannot raise one | held | `::test_the_lowest_limit_wins_and_an_unset_ceiling_leaves_the_users_number` |
+| Masks cancel to the exact total | held | `::test_masks_cancel_to_the_exact_total` |
+| A missing contribution voids the round and names no one | held | `::test_a_missing_contribution_voids_the_round_and_names_no_one` |
+| Two totals whose rosters differ by one cannot both be published | held for consecutive rounds | `::test_a_total_too_close_to_the_last_published_roster_is_withheld` |
+| The same, with another round published in between | **gap** | `::test_no_differencing_holds_across_an_intervening_round` |
+| A squad below the minimum group size cannot be read from the totals around it | **gap** | `::test_a_folded_squad_cannot_be_recovered_from_the_totals_around_it` |
 
 ## Usage
 
