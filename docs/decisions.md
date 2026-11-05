@@ -362,3 +362,27 @@ the recommendation, not the author's, and it stands until the author changes it.
   member gains nothing, since the total would still be one person's figure. In a
   real team of two, one invented member would reach the minimum group size and
   let either real member read the other's figure.
+
+## Team metrics deferred, 5 November 2026
+
+**Team metrics and additive masking are deferred until a concrete need shows
+up; do not build them or re-propose them without one** (the author, the same
+day: *"Metrics are a secondary requirement if there is another way to show
+business value for concerned managers"*, then *"Yes, defer them"*, on being
+shown other ways). This defers the 3 November direction on reporting; it does
+not reverse it. The rulings stay on record, ready if the need comes.
+
+- **Deferred:** per-squad and per-team usage and savings reports, contributions
+  and additive masking with its safeguards, the person-hours baseline, and the
+  question of where masked contributions go (issue #11).
+- **Stays:** cost limits, organisation ceilings at every level, per-user
+  enforcement, approval as a reviewed change, and the key-source contract. Each
+  user's own usage record stays, because the limits are counted from it.
+- **Still ruled out:** a trusted collector, and any report that names a person.
+- **How value is shown instead,** none of which collects figures from anyone:
+  the ceilings and the provider's own bill for cost; a repeatable before-and-after
+  on a fixed set of example investigations; the trace, which already shows which
+  steps took no model; and written cases from people who choose to share them.
+- **The limit of this:** a benchmark shows what the agent can do, not how much a
+  team uses it, and a bill shows spend, not time saved. A manager who needs
+  measured team savings is the concrete need that would reopen this.
