@@ -123,7 +123,9 @@ installed and which nothing in the package imports, so that the rulings can be a
 are built. `tests/test_design_challenges.py` does the attacking. A passing test is a promise that
 held. A test marked `gap` states a promise the design as ruled does not keep: it is expected to
 fail, strictly, so closing the gap in the sample turns the run red until the mark comes off. None
-is open: the first three were closed by rulings of 5 November 2026 in `docs/decisions.md`.
+is open: the first three were closed by rulings of 5 November 2026 in `docs/decisions.md`. Team
+metrics and masking were then deferred the same day, so the masking sample and its challenges are
+kept as the record of that design, not as a plan to build it.
 
 | Promise | Result | Challenge |
 | --- | --- | --- |
