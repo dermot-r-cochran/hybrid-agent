@@ -75,6 +75,7 @@ class Step:
     operation: str
     mechanism: Mechanism
     detail: str
+    called_model: bool = False  # an LLM step that was skipped called nothing
 
 
 AWAITING_HUMAN_REVIEW = "awaiting_human_review"
@@ -92,6 +93,10 @@ class Report:
     trace: list[Step] = field(default_factory=list)
     verification_issues: list[str] = field(default_factory=list)
     status: str = AWAITING_HUMAN_REVIEW
+
+    @property
+    def steps_without_a_model(self) -> int:
+        return sum(1 for s in self.trace if not s.called_model)
 
     def evidence_by_id(self) -> dict[str, Evidence]:
         return {e.id: e for e in [*self.observations, *self.derived]}

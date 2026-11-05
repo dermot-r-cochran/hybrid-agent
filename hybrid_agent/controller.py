@@ -92,8 +92,10 @@ class Controller:
 
     # --- steps ---------------------------------------------------------------
 
-    def _step(self, report: Report, operation: str, detail: str) -> None:
-        report.trace.append(Step(operation, ROUTES[operation], detail))
+    def _step(
+        self, report: Report, operation: str, detail: str, called_model: bool = False
+    ) -> None:
+        report.trace.append(Step(operation, ROUTES[operation], detail, called_model))
 
     def _call_llm(self, report: Report, operation: LLMOperation, prompt: str) -> str | None:
         model = self.models.get(operation)
@@ -104,10 +106,10 @@ class Controller:
         try:
             text = model.complete(prompt)
         except Exception as exc:  # provider failures must not crash the workflow
-            self._step(report, operation.value, f"model={model.name} failed: {exc}")
+            self._step(report, operation.value, f"model={model.name} failed: {exc}", True)
             report.unknowns.append(f"{operation.value} failed: {exc}")
             return None
-        self._step(report, operation.value, f"model={model.name}")
+        self._step(report, operation.value, f"model={model.name}", True)
         return text
 
     def _task(self, request: str, report: Report) -> Task | None:
