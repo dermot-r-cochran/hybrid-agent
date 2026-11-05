@@ -293,7 +293,8 @@ coding agent). The prompt is the brief; everything since is held against it.
     one or two people would reveal those people's figures by subtraction.
     A total is therefore withheld when its roster differs from the last
     published one by fewer than the minimum group size, and that period is
-    folded into the next publishable one or into the parent team.
+    folded into the next publishable one or into the parent team. (Widened
+    to every published roster on 5 November 2026, below.)
   - **The minimum group size holds for every round,** as for every report.
   - **Left to the build:** how each pair agrees its shared secret within
     the standard library, and how a void round is told apart from a quiet
@@ -320,3 +321,34 @@ coding agent). The prompt is the brief; everything since is held against it.
   every member's figures is one place to fail, to leak and to be pressed
   for an individual's numbers. Additive masking keeps no such place: no
   component, and no person, ever holds one member's unmasked figures.
+
+## Design challenge rulings, 5 November 2026
+
+The design challenges (`tests/test_design_challenges.py`) found three promises
+the rulings above did not keep. These closures are recommendations that follow
+from those rulings. The author took them up the same day (*"The three gaps"*,
+*"The group size"*) and accepted the direction (*"Sounds good"*). The wording is
+the recommendation, not the author's, and it stands until the author changes it. What was checked is the samples in
+`examples/cost_control`, not a built feature.
+
+- **A limit is checked against the worst case.** The cap is promised to hold,
+  and a response's size is not known before it is sent, so a request reserves
+  its prompt plus the largest response allowed, is refused if that does not fit,
+  and has the unused part refunded afterwards. A request that would have fitted
+  can therefore be refused near a limit; that is the price of the cap holding. A
+  failed call keeps its reservation, because what it cost is not known. Building
+  this needs the `LLM` protocol to carry the maximum and report the counts, and
+  it relies on the provider keeping to the maximum.
+- **No-differencing compares with every published roster,** not only the last.
+  Otherwise a round in between lets two nearly equal rosters both publish. It
+  does not expire: a withheld total folds into a later period or the parent team
+  (above), so this never leaves a figure with nowhere to go.
+- **What remains after subtraction counts as a group.** A squad folded into its
+  team is still alone if the team total minus the published squads leaves only
+  that squad. So the people a team total leaves unaccounted for must number none,
+  or at least the minimum group size, and the smallest published squad is held
+  back until they do. This applies wherever a total sits above smaller totals.
+- **The minimum group size is at least three.** In a group of two, either member
+  reads the other's figure by subtracting their own, which fails the relative
+  privacy bar. Three is the package's default and its floor; an organisation
+  policy may raise it, and may not lower it.
