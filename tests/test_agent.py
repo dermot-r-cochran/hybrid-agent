@@ -158,8 +158,31 @@ def test_verify_flags_bad_citations_numbers_and_files() -> None:
 
 
 def test_verify_report_flags_actions_bypassing_approval() -> None:
-    report = Report("q", actions=[ProposedAction("deploy", "", executed=True)])
-    assert verify_report(report) == ["action bypasses human approval: deploy"]
+    report = Report(
+        "q",
+        actions=[
+            ProposedAction("deploy", "", executed=True),
+            ProposedAction("rollback", "", requires_human_approval=False),
+            ProposedAction("open ticket", ""),
+        ],
+    )
+    assert verify_report(report) == [
+        "action bypasses human approval: deploy",
+        "action bypasses human approval: rollback",
+    ]
+
+
+def test_verify_report_flags_a_derived_result_whose_inputs_are_missing() -> None:
+    observation = Evidence("metrics:checkout", EvidenceKind.OBSERVATION, "metrics", "")
+
+    def report_with(inputs: list[str]) -> Report:
+        derived = Evidence("derived:x", EvidenceKind.DERIVED, "compute", "", {"inputs": inputs})
+        return Report("q", observations=[observation], derived=[derived])
+
+    assert verify_report(report_with(["metrics:checkout", "diff:gone"])) == [
+        "derived:x derived from missing evidence: diff:gone"
+    ]
+    assert verify_report(report_with(["metrics:checkout"])) == []
 
 
 # --- tools -----------------------------------------------------------------------------

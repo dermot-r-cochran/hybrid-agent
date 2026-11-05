@@ -102,7 +102,7 @@ second front-matter block. The tests in this table are in `tests/test_agent.py`.
 | A hypothesis consistent with the evidence passes verification | `::test_verify_accepts_consistent_hypothesis` |
 | Unknown citations, unmatched figures, files not in the change and an empty citation list are flagged | `::test_verify_flags_bad_citations_numbers_and_files` |
 | Sign, thousands separators, seconds and percentage points are all checked against computed values | `::test_numeric_claims_cannot_slip_past_verification`, `::test_equivalent_numeric_claims_pass` |
-| Derived results point to observations that exist | no test yet (`verify.py` checks it; nothing exercises the failing case) |
+| Derived results point to observations that exist | `::test_verify_report_flags_a_derived_result_whose_inputs_are_missing` |
 | The worked example end to end: three observations, one derived result, H1 passes and H2 fails, nothing executed, status `awaiting_human_review`, and the trace names the model that handled each LLM call | `::test_regression_investigation_end_to_end` |
 | The report says how many steps took no model; a skipped step counts among them and a failed call does not. This counts steps, and says nothing of what each cost or was worth | `::test_report_counts_the_steps_that_took_no_model` |
 | No regression means no LLM call | `::test_no_regression_means_no_llm_call` |
