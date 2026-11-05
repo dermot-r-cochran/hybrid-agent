@@ -38,6 +38,7 @@ def render(report: Report) -> str:
 
     out.append("\nTRACE (operation -> mechanism)")
     out += [f"  {s.operation:<20} {s.mechanism.value:<13} {s.detail}" for s in report.trace]
+    out.append(f"  {report.steps_without_a_model} of {len(report.trace)} steps took no model")
 
     if report.verification_issues:
         out.append("\nREPORT VERIFICATION ISSUES")

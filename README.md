@@ -104,6 +104,7 @@ second front-matter block. The tests in this table are in `tests/test_agent.py`.
 | Sign, thousands separators, seconds and percentage points are all checked against computed values | `::test_numeric_claims_cannot_slip_past_verification`, `::test_equivalent_numeric_claims_pass` |
 | Derived results point to observations that exist | no test yet (`verify.py` checks it; nothing exercises the failing case) |
 | The worked example end to end: three observations, one derived result, H1 passes and H2 fails, nothing executed, status `awaiting_human_review`, and the trace names the model that handled each LLM call | `::test_regression_investigation_end_to_end` |
+| The report says how many steps took no model; a skipped step counts among them and a failed call does not. This counts steps, and says nothing of what each cost or was worth | `::test_report_counts_the_steps_that_took_no_model` |
 | No regression means no LLM call | `::test_no_regression_means_no_llm_call` |
 | An ambiguous request goes to the model assigned to `interpret_request`, and the inferred task is listed as an unknown to confirm | `::test_ambiguous_request_routes_to_interpretation_model` |
 | A missing model is reported as an unknown, never replaced by another model | `::test_missing_model_is_reported_not_substituted` |
@@ -217,6 +218,7 @@ TRACE (operation -> mechanism)
   detect_regression    deterministic p95 change +128.6% vs threshold +20.0% -> regression
   generate_hypotheses  llm           model=scripted:fake_llm_responses.json
   verify               deterministic 2 hypotheses checked, 1 failed; 0 report-level issues
+  7 of 8 steps took no model
 
 STATUS: awaiting_human_review
 ```

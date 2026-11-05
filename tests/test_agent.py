@@ -17,6 +17,7 @@ from hybrid_agent.models import (
     Report,
     Task,
 )
+from hybrid_agent.report import render
 from hybrid_agent.tools import DiffTool, local_tools, parse_timestamp
 from hybrid_agent.verify import verify_hypothesis, verify_report
 
@@ -197,6 +198,22 @@ def test_regression_investigation_end_to_end() -> None:
     assert mechanisms["compare_windows"] is Mechanism.COMPUTATION
     assert mechanisms["generate_hypotheses"] is Mechanism.LLM
     assert "model=strong-model" in [s.detail for s in report.trace if s.mechanism is Mechanism.LLM]
+
+
+def test_report_counts_the_steps_that_took_no_model() -> None:
+    _, _, models = per_operation_models()
+    report = controller(models).investigate(CHECKOUT_Q)
+    assert (report.steps_without_a_model, len(report.trace)) == (7, 8)
+    assert "7 of 8 steps took no model" in render(report)
+
+    no_regression = controller(models).investigate("Is search slower since its last deploy?")
+    assert no_regression.steps_without_a_model == len(no_regression.trace)
+
+    # A skipped step called nothing; a call that failed was still made.
+    skipped = controller().investigate(CHECKOUT_Q)
+    assert skipped.steps_without_a_model == len(skipped.trace)
+    failed = controller({LLMOperation.GENERATE_HYPOTHESES: FakeLLM({})}).investigate(CHECKOUT_Q)
+    assert failed.steps_without_a_model == len(failed.trace) - 1
 
 
 def test_no_regression_means_no_llm_call() -> None:
