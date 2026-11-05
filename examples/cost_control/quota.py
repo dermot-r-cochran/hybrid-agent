@@ -97,15 +97,19 @@ def rough_count(text: str) -> int:
 
 @dataclass
 class MeteredLLM:
-    """Refuses before sending, on what it can know then: the size of the prompt.
+    """Reserves the prompt plus the largest response allowed, then refunds what went unused.
 
-    `LLM.complete` returns text only, so real counts would need the protocol to
-    report them; `count` stands in for that here.
+    A response's size is not known before it is sent, so the worst case is what
+    has to fit. A failed call keeps its reservation, since what it cost is not
+    known. `LLM.complete` takes no maximum and returns text only, so the real
+    thing would need the protocol to carry the one and report the counts; the
+    sample trusts `inner` to keep to `max_response`, and `count` stands in.
     """
 
     inner: LLM
     allowance: Allowance
     today: Callable[[], int]
+    max_response: int
     count: Callable[[str], int] = rough_count
     name: str = field(init=False)
 
@@ -114,9 +118,11 @@ class MeteredLLM:
 
     def complete(self, prompt: str) -> str:
         day, sent = self.today(), self.count(prompt)
-        reason = self.allowance.refusal(day, sent)
+        reserved = sent + self.max_response
+        reason = self.allowance.refusal(day, reserved)
         if reason is not None:
             raise Refused(reason)
+        self.allowance.charge(day, reserved)
         response = self.inner.complete(prompt)
-        self.allowance.charge(day, sent + self.count(response))
+        self.allowance.charge(day, sent + self.count(response) - reserved)
         return response

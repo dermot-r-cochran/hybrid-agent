@@ -14,7 +14,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 
 MODULUS = 2**64
-# The rulings name no number. Three is the floor: in a group of two, either
+# The floor (docs/decisions.md, 5 November 2026): in a group of two, either
 # member reads the other's figure from the total by subtracting their own.
 MIN_GROUP_SIZE = 3
 
@@ -50,8 +50,15 @@ def masked(member: str, figure: int, current: Round, secrets: Secrets) -> int:
 def reported_groups(
     team: frozenset[str], squads: Mapping[str, frozenset[str]]
 ) -> dict[str, frozenset[str]]:
-    """The team, and each squad big enough to stand alone; a smaller one sits inside the team."""
+    """The team, and each squad that can stand alone without exposing what remains.
+
+    A smaller squad sits inside the team. The team total minus the published
+    squads must not leave fewer people than the minimum, so the smallest squad
+    is held back with it until it does not.
+    """
     large = {name: roster for name, roster in squads.items() if len(roster) >= MIN_GROUP_SIZE}
+    while large and 0 < len(team.difference(*large.values())) < MIN_GROUP_SIZE:
+        del large[min(large, key=lambda name: (len(large[name]), name))]
     return {**large, "team": team}
 
 
@@ -77,7 +84,7 @@ class Ledger:
             return Outcome(None, "withheld: below the minimum group size")
         if roster - roster_now or roster - contributions.keys():
             return Outcome(None, "void: the frozen roster did not all contribute")
-        if self.published and 0 < len(roster ^ self.published[-1]) < MIN_GROUP_SIZE:
-            return Outcome(None, "withheld: too close to the last published roster")
+        if any(0 < len(roster ^ earlier) < MIN_GROUP_SIZE for earlier in self.published):
+            return Outcome(None, "withheld: too close to a published roster")
         self.published.append(roster)
         return Outcome(sum(contributions[m] for m in roster) % MODULUS, "published")

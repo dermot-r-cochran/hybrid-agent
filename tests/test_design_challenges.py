@@ -54,7 +54,7 @@ def metered_controller(allowance: Allowance) -> tuple[Controller, FakeLLM]:
     metrics, tools = local_tools(EVIDENCE)
     inner = load_scripted_llm(SCRIPT)
     models: dict[LLMOperation, LLM] = {
-        LLMOperation.GENERATE_HYPOTHESES: MeteredLLM(inner, allowance, today=lambda: 0)
+        LLMOperation.GENERATE_HYPOTHESES: MeteredLLM(inner, allowance, lambda: 0, max_response=1000)
     }
     return Controller(tools, metrics.services(), models), inner
 
@@ -129,22 +129,43 @@ def test_an_unweighted_token_kind_is_refused_not_free() -> None:
         input_equivalent({"thinking": 1}, weights)
 
 
-@gap(
-    "A request's output is not known before it is sent, so a cap checked on the "
-    "estimate can be passed by one response. The rulings do not say what is charged "
-    "up front; reserving the response's maximum and refunding the rest would keep it."
-)
+class Verbose:
+    """A response far larger than the prompt, within the maximum it was given."""
+
+    name = "verbose"
+
+    def complete(self, prompt: str) -> str:
+        return "x" * 40
+
+
 def test_a_rolling_cap_holds_when_the_response_is_larger_than_estimated() -> None:
-    class Verbose:
-        name = "verbose"
+    allowance = Allowance(Limits(100, 100, 100, 100))
+    metered = MeteredLLM(Verbose(), allowance, lambda: 0, max_response=50, count=len)
+    for _ in range(5):
+        with suppress(Refused):
+            metered.complete("prompt")
+    assert allowance.used(0, 30) <= allowance.limits.monthly
+
+
+def test_the_unused_part_of_a_reservation_is_refunded() -> None:
+    allowance = Allowance(Limits(100, 100, 100, 100))
+    MeteredLLM(Verbose(), allowance, lambda: 0, max_response=50, count=len).complete("prompt")
+    assert allowance.used(0, 30) == len("prompt") + 40
+    assert allowance.bucket == 100 - (len("prompt") + 40)
+
+
+def test_a_failed_call_keeps_its_reservation() -> None:
+    class Failing:
+        name = "failing"
 
         def complete(self, prompt: str) -> str:
-            return "x" * 500
+            raise TimeoutError("no response")
 
     allowance = Allowance(Limits(100, 100, 100, 100))
-    with suppress(Refused):
-        MeteredLLM(Verbose(), allowance, today=lambda: 0, count=len).complete("prompt")
-    assert allowance.used(0, 30) <= allowance.limits.monthly
+    metered = MeteredLLM(Failing(), allowance, lambda: 0, max_response=50, count=len)
+    with pytest.raises(TimeoutError):
+        metered.complete("prompt")
+    assert allowance.used(0, 30) == len("prompt") + 50
 
 
 # --- additive masking ------------------------------------------------------------------
@@ -208,17 +229,22 @@ def test_a_group_below_the_minimum_size_is_withheld() -> None:
     assert Ledger().close(current, contributions(current), current.roster).total is None
 
 
-def test_a_total_too_close_to_the_last_published_roster_is_withheld() -> None:
+def test_a_group_of_three_publishes_and_no_member_can_read_a_colleague() -> None:
+    assert MIN_GROUP_SIZE == 3
+    roster = frozenset("abc")
+    total = publish(Ledger(), "r1", roster)
+    assert total is not None
+    for member in roster:
+        remainder = total - FIGURES[member]
+        assert remainder not in {FIGURES[m] for m in roster - {member}}
+
+
+def test_a_total_too_close_to_a_published_roster_is_withheld() -> None:
     ledger = Ledger()
     publish(ledger, "r1", ABCDEF)
     assert publish(ledger, "r2", ABCDEF - {"a"}) is None
 
 
-@gap(
-    "The no-differencing safeguard compares a roster with the last published one "
-    "only, so an unrelated round in between lets two near-identical rosters both "
-    "publish. Comparing with every published roster would close this."
-)
 def test_no_differencing_holds_across_an_intervening_round() -> None:
     ledger = Ledger()
     before = publish(ledger, "r1", ABCDEF)
@@ -227,11 +253,6 @@ def test_no_differencing_holds_across_an_intervening_round() -> None:
     assert before is None or after is None or before - after != FIGURES["a"]
 
 
-@gap(
-    "A squad below the minimum is folded into its team, but the team total minus the "
-    "published squads leaves exactly that squad. The check has to run on what remains "
-    "after subtraction: withhold a further squad so no remainder is below the minimum."
-)
 def test_a_folded_squad_cannot_be_recovered_from_the_totals_around_it() -> None:
     squads = {
         "alpha": frozenset("abc"),
@@ -243,6 +264,11 @@ def test_a_folded_squad_cannot_be_recovered_from_the_totals_around_it() -> None:
     ledger = Ledger()
     groups = reported_groups(team, squads)
     totals = {name: publish(ledger, f"r-{name}", roster) for name, roster in groups.items()}
-    alpha, beta, whole = totals["alpha"], totals["beta"], totals["team"]
-    if alpha is not None and beta is not None and whole is not None:
-        assert whole - alpha - beta != FIGURES["g"]
+    whole = totals.pop("team")
+    assert whole is not None
+    assert whole - sum(t for t in totals.values() if t is not None) != FIGURES["g"]
+
+
+def test_squads_that_cover_their_team_are_all_published() -> None:
+    squads = {"alpha": frozenset("abc"), "beta": frozenset("def")}
+    assert set(reported_groups(ABCDEF, squads)) == {"alpha", "beta", "team"}

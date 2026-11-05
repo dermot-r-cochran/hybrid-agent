@@ -122,19 +122,22 @@ code: the package has neither. `examples/cost_control` holds a small sample of e
 installed and which nothing in the package imports, so that the rulings can be attacked before they
 are built. `tests/test_design_challenges.py` does the attacking. A passing test is a promise that
 held. A test marked `gap` states a promise the design as ruled does not keep: it is expected to
-fail, strictly, so closing the gap in the sample turns the run red until the mark comes off.
+fail, strictly, so closing the gap in the sample turns the run red until the mark comes off. None
+is open: the first three were closed by rulings of 5 November 2026 in `docs/decisions.md`.
 
 | Promise | Result | Challenge |
 | --- | --- | --- |
 | With no limits set, a call is refused before it is sent, and the refusal is an unknown in the report, through the existing controller and no change to it | held | `tests/test_design_challenges.py::test_default_limits_refuse_before_sending` |
-| The bucket and the rolling weekly and 30-day caps all hold over a year of random requests | held, when a request's size is known in advance | `::test_rolling_caps_hold_for_a_year_when_estimates_are_exact` |
-| A rolling cap holds whatever a response turns out to cost | **gap** | `::test_a_rolling_cap_holds_when_the_response_is_larger_than_estimated` |
+| The bucket and the rolling weekly and 30-day caps all hold over a year of random requests | held | `::test_rolling_caps_hold_for_a_year_when_estimates_are_exact` |
+| A rolling cap holds whatever a response within its maximum turns out to cost, and the unused reservation comes back | held since 5 November | `::test_a_rolling_cap_holds_when_the_response_is_larger_than_estimated`, `::test_the_unused_part_of_a_reservation_is_refunded` |
+| A failed call keeps its reservation | held | `::test_a_failed_call_keeps_its_reservation` |
 | The lowest limit wins, and a user cannot raise one | held | `::test_the_lowest_limit_wins_and_an_unset_ceiling_leaves_the_users_number` |
 | Masks cancel to the exact total | held | `::test_masks_cancel_to_the_exact_total` |
+| At the minimum group size of three, a total is published and no member can read a colleague's figure from it | held since 5 November | `::test_a_group_of_three_publishes_and_no_member_can_read_a_colleague` |
 | A missing contribution voids the round and names no one | held | `::test_a_missing_contribution_voids_the_round_and_names_no_one` |
-| Two totals whose rosters differ by one cannot both be published | held for consecutive rounds | `::test_a_total_too_close_to_the_last_published_roster_is_withheld` |
-| The same, with another round published in between | **gap** | `::test_no_differencing_holds_across_an_intervening_round` |
-| A squad below the minimum group size cannot be read from the totals around it | **gap** | `::test_a_folded_squad_cannot_be_recovered_from_the_totals_around_it` |
+| Two totals whose rosters differ by one cannot both be published | held | `::test_a_total_too_close_to_a_published_roster_is_withheld` |
+| The same, with another round published in between | held since 5 November | `::test_no_differencing_holds_across_an_intervening_round` |
+| A squad below the minimum group size cannot be read from the totals around it, and squads that cover their team all still publish | held since 5 November | `::test_a_folded_squad_cannot_be_recovered_from_the_totals_around_it`, `::test_squads_that_cover_their_team_are_all_published` |
 
 ## Usage
 
