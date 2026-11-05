@@ -14,7 +14,7 @@ A deliberately small engineering agent built on one principle: use the simplest 
 pip install -e ".[dev]"                 # package + pytest, ruff, mypy at the exact versions CI uses
 ruff check . && ruff format --check .   # lint and formatting (line length 100; rules E F I B UP)
 mypy hybrid_agent tests                 # strict mode, on the package and the tests
-pytest -q                               # the suite (tests/test_agent.py)
+pytest -q                               # the suite, including the design challenges
 pytest -q -k verify                     # tests by keyword
 python .github/scripts/check_docs.py    # the doc check CI runs: README citations, links, front matter
 python -m hybrid_agent "Why did checkout p95 latency go up after the latest deploy?" \
@@ -35,6 +35,7 @@ Two things are set by code and never by the model: the `executed` and `requires_
 - The *Known limitations (not defects)* section of the README lists choices. Changing one is a decision for `docs/decisions.md`, not a fix.
 - The deferred list in `docs/decisions.md` (ruling 11) is binding until a concrete need is shown.
 - Tests live in `tests/test_agent.py`, grouped by section comment; a new capability gets its tests and its README row in the same change.
+- A ruling not yet built is challenged in `tests/test_design_challenges.py` against a sample under `examples/`. The samples are not the package: it does not import them and they are not installed. A `gap` test is a strict expected failure, so closing a gap goes red until the mark comes off and the README's *Design challenges* row is updated.
 
 ## Which model does which work
 
