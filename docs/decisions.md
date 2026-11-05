@@ -352,3 +352,13 @@ the recommendation, not the author's, and it stands until the author changes it.
   reads the other's figure by subtracting their own, which fails the relative
   privacy bar. Three is the package's default and its floor; an organisation
   policy may raise it, and may not lower it.
+- **One person can use it alone, with no team, no metrics and no organisation
+  policy** (the author's question and *"Yes, record both"*, the same day; this
+  states what the rulings above already imply). They set their own limits, or
+  no model is called. Their usage stays on their own machine, where they read
+  it directly. No round is opened and nothing leaves the machine.
+- **There are no virtual members.** A roster comes only from the organisation's
+  own record, and the package offers no way to add to one. Alone, an invented
+  member gains nothing, since the total would still be one person's figure. In a
+  real team of two, one invented member would reach the minimum group size and
+  let either real member read the other's figure.
