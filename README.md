@@ -33,6 +33,8 @@ Engineer request
 | `llm.py` | `LLM` protocol, `FakeLLM`, prompts, strict JSON parsing, per-operation model requirements. |
 | `verify.py` | Checks hypotheses and report invariants. |
 | `controller.py` | Routing table, workflow, model assignment, audit trace. |
+| `report.py` | Plain-text rendering of a report for human review. The report text under *Worked example* is its output. |
+| `__main__.py` | Command-line entry point: `python -m hybrid_agent "<question>" --evidence DIR`, with `--llm-script` for scripted responses and `--json` for the report as JSON. |
 
 ### Choosing a model for each LLM operation
 
