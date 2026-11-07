@@ -21,7 +21,7 @@ python -m hybrid_agent "Why did checkout p95 latency go up after the latest depl
     --evidence examples/checkout_latency --llm-script examples/checkout_latency/fake_llm_responses.json
 ```
 
-CI (`.github/workflows/ci.yml`) runs the four checks and the end-to-end demo on Python 3.11 and 3.12, and a `docs` job runs the stdlib doc check. The development tools are pinned to exact versions in `pyproject.toml` (`pytest==9.2.0`, `ruff==0.17.3`, `mypy==2.4.1`); a red run therefore means the code changed, not the linter, and raising a pin is its own small, deliberate change. Every capability the README claims names the test that proves it (`tests/test_agent.py::test_name`) or says *no test yet* (Dermot, 10 October 2026); keep that true when a test or a capability is renamed, and write a new claim's proof in the same change.
+CI (`.github/workflows/ci.yml`) runs the four checks and the end-to-end demo on Python 3.11, 3.12, 3.13 and 3.14, and a `docs` job runs the stdlib doc check. The development tools are pinned to exact versions in `pyproject.toml` (`pytest==9.2.0`, `ruff==0.17.3`, `mypy==2.4.1`); a red run therefore means the code changed, not the linter, and raising a pin is its own small, deliberate change. Every capability the README claims names the test that proves it (`tests/test_agent.py::test_name`) or says *no test yet* (Dermot, 10 October 2026); keep that true when a test or a capability is renamed, and write a new claim's proof in the same change.
 
 ## Architecture
 
