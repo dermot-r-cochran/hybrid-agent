@@ -477,6 +477,13 @@ built in the package until the issue that tracks it is taken up.
     at the prompt. The partner's own approval steps still apply. Fixes,
     merges, deployments and every other consequential action are proposed,
     never run.
+- **Both are command-line tools running locally** (the author: *"Command
+  Line Interface, running locally for both, even if they are cloud-aware"*).
+  The partner is reached only as a process on the same machine, or through
+  a folder on it; never as a network service, a hosted agent or a remote
+  endpoint. Either may talk to cloud services on its own account, as the
+  partner's recipes may, but the hand-over between them never leaves the
+  machine, and this agent opens no listener of its own.
 - **Without a partner, nothing breaks.** The meta-recipe is printed as a
   checklist for a person to gather the evidence by hand, which is how the
   agent works today. Having no partner is the default, like having no model.
