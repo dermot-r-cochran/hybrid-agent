@@ -484,6 +484,12 @@ built in the package until the issue that tracks it is taken up.
   endpoint. Either may talk to cloud services on its own account, as the
   partner's recipes may, but the hand-over between them never leaves the
   machine, and this agent opens no listener of its own.
+- **Peer-to-peer belongs to `swarm`, not here** (the author: *"peer-to-peer
+  would require the swarm repo using hybrid-agents as peer nodes"*). This
+  agent has one local partner and no peers. A network of agents exchanging
+  beliefs and evidence would be built in `swarm`, with hybrid-agents as its
+  nodes, under that repository's own rulings. Nothing here is built for it in
+  advance (ruling 12).
 - **Without a partner, nothing breaks.** The meta-recipe is printed as a
   checklist for a person to gather the evidence by hand, which is how the
   agent works today. Having no partner is the default, like having no model.
