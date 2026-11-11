@@ -175,7 +175,10 @@ coding agent). The prompt is the brief; everything since is held against it.
   same day, the author: unused daily quota may roll over, subject to a
   30-day rolling limit). A request that fits neither the bucket nor the
   rolling cap is refused before it is sent, and the refusal is an unknown
-  with the reason in the trace.
+  with the reason in the trace. *The daily accrual, the burst cap and the
+  30-day cap were replaced by one weekly cap on 11 November 2026 (below);
+  the defaults of 0, the input-equivalent count and the refusal as an
+  unknown stand.*
   Limits are the user's own numbers. No price, currency or real figure ships
   in the package, its tests or its docs.
 - **A management approver is a code owner or an organisation admin** (the
@@ -217,13 +220,15 @@ coding agent). The prompt is the brief; everything since is held against it.
   is sent, and the refusal names which limit it hit. An organisation policy
   (issue #11) may set weekly ceilings per user, per squad or per team, and
   the lower of the organisation's and the user's number wins, as for the
-  other limits.
+  other limits. *Since 11 November 2026 this weekly cap is the only limit
+  (below).*
 - **Quotas may be enforced per GitHub user; reports still never name one**
   (the author, the same day: quotas can be enforced per individual GitHub
   user even if not mentioned in the reports). Enforcement and reporting are
   separate:
-  - **Enforcement:** an organisation policy may set any limit (daily,
-    burst, weekly, 30-day) for an individual GitHub user, as well as for a
+  - **Enforcement:** an organisation policy may set the limit (the weekly
+    cap since 11 November 2026; daily, burst and 30-day before) for an
+    individual GitHub user, as well as for a
     squad or a team. The lowest number that applies to that user wins.
   - **Where it is counted:** on the user's own machine, from their own
     usage record, as the user's own limits already are. A refusal is shown
@@ -386,3 +391,35 @@ not reverse it. The rulings stay on record, ready if the need comes.
 - **The limit of this:** a benchmark shows what the agent can do, not how much a
   team uses it, and a bill shows spend, not time saved. A manager who needs
   measured team savings is the concrete need that would reopen this.
+
+## One weekly cap, 11 November 2026
+
+**The allowance is one rolling weekly cap; this supersedes the daily
+accrual, the burst cap and the 30-day cap of 3 November** (the author, the
+same day: *"Yes update the cost ruling"*, accepting a recommendation to carry
+over a lesson from use). The author's private engineering agent, described
+here and never named, was built with the same daily, rollover and 30-day
+limits and was cut down to one weekly figure after use showed the extra
+limits added settings without adding protection. The reasoning is restated
+here in this repository's terms.
+
+- **The week is the rollover.** A quiet day leaves its share inside the
+  7-day window for a busy one, which is what the daily figure and the burst
+  cap together were built to allow.
+- **The week bounds the month.** Any 30 days fall within five 7-day windows,
+  so they spend at most five times the weekly figure. A user or an
+  organisation that thinks in monthly money sets the weekly cap at a fifth
+  of it, and the 30-day bound holds without a 30-day cap.
+- **What is given up.** One day may spend the whole week's figure. Stopping
+  a runaway investigation is the job of the per-call maximum the reservation
+  already uses, not of a daily figure.
+- **What stands:** every limit defaults to 0, so out of the box no model is
+  called; usage is counted in input-equivalent tokens from the user's own
+  record; a request is reserved at its worst case and refused before it is
+  sent, with the refusal an unknown that names the cap and what is left;
+  organisation ceilings at every level and per-user enforcement apply to the
+  weekly cap, and the lowest number wins.
+- **Proof.** The sample in `examples/cost_control/quota.py` now holds one
+  weekly cap, and `tests/test_design_challenges.py` checks that a quiet day
+  leaves room for a busy one, that any 30 days spend at most five weeks'
+  worth, and that the cap holds over a year of random requests.

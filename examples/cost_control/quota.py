@@ -1,4 +1,6 @@
-"""Sample of the cost limits ruled on 3 November 2026 (docs/decisions.md).
+"""Sample of the cost limit as ruled on 11 November 2026 (docs/decisions.md):
+one rolling weekly cap, which replaced the daily accrual, burst and 30-day cap
+of 3 November.
 
 A sketch to challenge the design with, not the package's code: it is not
 installed, and nothing in hybrid_agent imports it. Days are plain integers so
@@ -26,20 +28,14 @@ class Refused(RuntimeError):
 class Limits:
     """A user's own numbers, in input-equivalent tokens. Every one defaults to 0."""
 
-    daily: int = 0
-    burst: int = 0
     weekly: int = 0
-    monthly: int = 0
 
 
 @dataclass(frozen=True)
 class Ceilings:
     """An organisation's numbers. Unset means no ceiling, not a ceiling of 0."""
 
-    daily: int | None = None
-    burst: int | None = None
     weekly: int | None = None
-    monthly: int | None = None
 
 
 def effective(own: Limits, *ceilings: Ceilings) -> Limits:
@@ -60,34 +56,27 @@ def input_equivalent(counts: Mapping[str, int], weights: Mapping[str, float]) ->
 @dataclass
 class Allowance:
     limits: Limits
-    day: int = 0
     usage: list[tuple[int, int]] = field(default_factory=list)
-    bucket: int = field(init=False)
-
-    def __post_init__(self) -> None:
-        self.bucket = min(self.limits.daily, self.limits.burst)
-
-    def _accrue(self, day: int) -> None:
-        earned = (day - self.day) * self.limits.daily
-        self.bucket = min(self.bucket + earned, self.limits.burst)
-        self.day = day
 
     def used(self, day: int, window: int) -> int:
         return sum(tokens for d, tokens in self.usage if day - window < d <= day)
 
     def refusal(self, day: int, tokens: int) -> str | None:
-        """The limit this request would break, or None if it fits them all."""
-        self._accrue(day)
-        if tokens > self.bucket:
-            return f"refused by the bucket: {tokens} requested, {self.bucket} held"
-        if self.used(day, 7) + tokens > self.limits.weekly:
-            return f"refused by the weekly cap of {self.limits.weekly}"
-        if self.used(day, 30) + tokens > self.limits.monthly:
-            return f"refused by the 30-day cap of {self.limits.monthly}"
+        """Why this request would break the weekly cap, or None if it fits.
+
+        The week is the rollover: a quiet day leaves its share in the window
+        for a busy one. It also bounds the month, since any 30 days fall
+        within five 7-day windows.
+        """
+        used = self.used(day, 7)
+        if used + tokens > self.limits.weekly:
+            return (
+                f"refused by the weekly cap of {self.limits.weekly}: "
+                f"{tokens} requested, {self.limits.weekly - used} left"
+            )
         return None
 
     def charge(self, day: int, tokens: int) -> None:
-        self.bucket -= tokens
         self.usage.append((day, tokens))
 
 
