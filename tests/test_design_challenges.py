@@ -1,4 +1,4 @@
-"""Design challenges: the rulings of 3 November 2026, attacked before they are built.
+"""Design challenges: the rulings of 3 to 11 November 2026, attacked before they are built.
 
 Each test holds a ruling in docs/decisions.md to what it promises, through the
 sketches in examples/cost_control. A plain test is a promise that held. A test
@@ -64,13 +64,13 @@ def test_default_limits_refuse_before_sending() -> None:
     report = controller.investigate(CHECKOUT_Q)
     assert inner.calls == []
     assert report.hypotheses == []
-    assert any("refused by the bucket" in unknown for unknown in report.unknowns)
-    assert any("refused by the bucket" in step.detail for step in report.trace)
+    assert any("refused by the weekly cap" in unknown for unknown in report.unknowns)
+    assert any("refused by the weekly cap" in step.detail for step in report.trace)
     assert report.status == AWAITING_HUMAN_REVIEW
 
 
 def test_assigned_limits_let_the_workflow_run_unchanged() -> None:
-    allowance = Allowance(Limits(1_000_000, 1_000_000, 1_000_000, 1_000_000))
+    allowance = Allowance(Limits(weekly=1_000_000))
     controller, inner = metered_controller(allowance)
     report = controller.investigate(CHECKOUT_Q)
     assert len(inner.calls) == 1
@@ -78,28 +78,30 @@ def test_assigned_limits_let_the_workflow_run_unchanged() -> None:
     assert allowance.used(0, 30) > 0
 
 
-def test_unspent_allowance_rolls_over_only_to_the_burst_cap() -> None:
-    allowance = Allowance(Limits(daily=10, burst=30, weekly=1000, monthly=1000))
-    assert allowance.refusal(100, 31) is not None
-    assert allowance.refusal(100, 30) is None
+def test_a_quiet_day_leaves_its_share_for_a_busy_one() -> None:
+    allowance = Allowance(Limits(weekly=70))
+    allowance.charge(0, 10)
+    assert allowance.refusal(6, 60) is None
+    assert allowance.refusal(6, 61) is not None
+    assert allowance.refusal(7, 70) is None
 
 
-@pytest.mark.parametrize(
-    ("limit", "limits", "tokens"),
-    [
-        ("bucket", Limits(50, 50, 1000, 1000), 51),
-        ("weekly", Limits(50, 50, 60, 1000), 20),
-        ("30-day", Limits(50, 50, 1000, 60), 20),
-    ],
-)
-def test_a_refusal_names_the_limit_it_hit(limit: str, limits: Limits, tokens: int) -> None:
-    allowance = Allowance(limits)
+def test_a_refusal_names_the_cap_and_what_is_left() -> None:
+    allowance = Allowance(Limits(weekly=60))
     allowance.charge(0, 50)
-    assert limit in (allowance.refusal(1, tokens) or "")
+    assert allowance.refusal(1, 20) == "refused by the weekly cap of 60: 20 requested, 10 left"
 
 
-def test_rolling_caps_hold_for_a_year_when_estimates_are_exact() -> None:
-    limits = Limits(daily=100, burst=400, weekly=500, monthly=1500)
+def test_any_30_days_spend_at_most_five_weeks_worth() -> None:
+    allowance = Allowance(Limits(weekly=100))
+    for day in range(120):
+        if allowance.refusal(day, 100) is None:
+            allowance.charge(day, 100)
+        assert allowance.used(day, 30) <= 5 * allowance.limits.weekly
+
+
+def test_the_weekly_cap_holds_for_a_year_when_estimates_are_exact() -> None:
+    limits = Limits(weekly=500)
     allowance, rng = Allowance(limits), random.Random(0)
     sent = refused = 0
     for day in range(365):
@@ -110,16 +112,16 @@ def test_rolling_caps_hold_for_a_year_when_estimates_are_exact() -> None:
                 sent += 1
             else:
                 refused += 1
-        assert allowance.bucket <= limits.burst
         assert allowance.used(day, 7) <= limits.weekly
-        assert allowance.used(day, 30) <= limits.monthly
+        assert allowance.used(day, 30) <= 5 * limits.weekly
     assert sent and refused
 
 
 def test_the_lowest_limit_wins_and_an_unset_ceiling_leaves_the_users_number() -> None:
-    own = Limits(daily=100, burst=200, weekly=300, monthly=400)
-    team, personal = Ceilings(daily=500, weekly=250), Ceilings(weekly=150)
-    assert effective(own, team, personal) == Limits(100, 200, 150, 400)
+    own = Limits(weekly=300)
+    assert effective(own, Ceilings(weekly=250), Ceilings(weekly=150)) == Limits(weekly=150)
+    assert effective(own, Ceilings(weekly=500)) == Limits(weekly=300)
+    assert effective(own, Ceilings()) == own
 
 
 def test_an_unweighted_token_kind_is_refused_not_free() -> None:
@@ -138,20 +140,19 @@ class Verbose:
         return "x" * 40
 
 
-def test_a_rolling_cap_holds_when_the_response_is_larger_than_estimated() -> None:
-    allowance = Allowance(Limits(100, 100, 100, 100))
+def test_the_weekly_cap_holds_when_the_response_is_larger_than_estimated() -> None:
+    allowance = Allowance(Limits(weekly=100))
     metered = MeteredLLM(Verbose(), allowance, lambda: 0, max_response=50, count=len)
     for _ in range(5):
         with suppress(Refused):
             metered.complete("prompt")
-    assert allowance.used(0, 30) <= allowance.limits.monthly
+    assert allowance.used(0, 7) <= allowance.limits.weekly
 
 
 def test_the_unused_part_of_a_reservation_is_refunded() -> None:
-    allowance = Allowance(Limits(100, 100, 100, 100))
+    allowance = Allowance(Limits(weekly=100))
     MeteredLLM(Verbose(), allowance, lambda: 0, max_response=50, count=len).complete("prompt")
-    assert allowance.used(0, 30) == len("prompt") + 40
-    assert allowance.bucket == 100 - (len("prompt") + 40)
+    assert allowance.used(0, 7) == len("prompt") + 40
 
 
 def test_a_failed_call_keeps_its_reservation() -> None:
@@ -161,11 +162,11 @@ def test_a_failed_call_keeps_its_reservation() -> None:
         def complete(self, prompt: str) -> str:
             raise TimeoutError("no response")
 
-    allowance = Allowance(Limits(100, 100, 100, 100))
+    allowance = Allowance(Limits(weekly=100))
     metered = MeteredLLM(Failing(), allowance, lambda: 0, max_response=50, count=len)
     with pytest.raises(TimeoutError):
         metered.complete("prompt")
-    assert allowance.used(0, 30) == len("prompt") + 50
+    assert allowance.used(0, 7) == len("prompt") + 50
 
 
 # --- additive masking ------------------------------------------------------------------

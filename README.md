@@ -133,8 +133,9 @@ kept as the record of that design, not as a plan to build it.
 | Promise | Result | Challenge |
 | --- | --- | --- |
 | With no limits set, a call is refused before it is sent, and the refusal is an unknown in the report, through the existing controller and no change to it | held | `tests/test_design_challenges.py::test_default_limits_refuse_before_sending` |
-| The bucket and the rolling weekly and 30-day caps all hold over a year of random requests | held | `::test_rolling_caps_hold_for_a_year_when_estimates_are_exact` |
-| A rolling cap holds whatever a response within its maximum turns out to cost, and the unused reservation comes back | held since 5 November | `::test_a_rolling_cap_holds_when_the_response_is_larger_than_estimated`, `::test_the_unused_part_of_a_reservation_is_refunded` |
+| The weekly cap holds over a year of random requests, and a quiet day leaves its share for a busy one | held | `::test_the_weekly_cap_holds_for_a_year_when_estimates_are_exact`, `::test_a_quiet_day_leaves_its_share_for_a_busy_one` |
+| Any 30 days spend at most five weeks' worth, so no 30-day cap is needed (one weekly cap since 11 November) | held | `::test_any_30_days_spend_at_most_five_weeks_worth` |
+| The weekly cap holds whatever a response within its maximum turns out to cost, and the unused reservation comes back | held since 5 November | `::test_the_weekly_cap_holds_when_the_response_is_larger_than_estimated`, `::test_the_unused_part_of_a_reservation_is_refunded` |
 | A failed call keeps its reservation | held | `::test_a_failed_call_keeps_its_reservation` |
 | The lowest limit wins, and a user cannot raise one | held | `::test_the_lowest_limit_wins_and_an_unset_ceiling_leaves_the_users_number` |
 | Masks cancel to the exact total | held | `::test_masks_cancel_to_the_exact_total` |
