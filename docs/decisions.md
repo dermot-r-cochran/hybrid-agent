@@ -58,7 +58,9 @@ coding agent). The prompt is the brief; everything since is held against it.
 9. **Human review for consequential decisions.** *"Require human review for
    consequential decisions or actions."* Nothing is executed. An action with
    `executed` set, or `requires_human_approval` cleared, fails verification;
-   the LLM cannot set those fields.
+   the LLM cannot set those fields. *Narrowed on 11 November 2026 for one
+   case, a confirmed, read-only evidence call to a configured local partner
+   (A local partner, recipes and workflows, below).*
 
 10. **No formal methods without a concrete requirement.** *"Do not use
     traditional formal methods unless a concrete requirement justifies their
@@ -75,6 +77,9 @@ coding agent). The prompt is the brief; everything since is held against it.
     demonstrated use case; autonomous merging or deployment; speculative
     abstraction layers; complex frameworks where straightforward code is
     sufficient."* Do not re-propose any of these without the need.
+    *Multi-agent orchestration was narrowed on 11 November 2026 to allow one
+    hand-over to a configured local partner and nothing more (A local
+    partner, recipes and workflows, below).*
 
 12. **Extensible, but not for show.** Boundaries are kept clean so that real
     LLM providers, classical ML models, more tools, retrieval and lightweight
@@ -423,3 +428,81 @@ here in this repository's terms.
   weekly cap, and `tests/test_design_challenges.py` checks that a quiet day
   leaves room for a busy one, that any 30 days spend at most five weeks'
   worth, and that the cap holds over a year of random requests.
+
+## A local partner, recipes and workflows, 11 November 2026
+
+**The agent may work with a local partner: a separate agent customised for
+the user's own machine and stack, which the user may or may not have**
+(the author, the same day: *"Hybrid Agent is technology stack agnostic
+whereas my [own agent] is customized for my own local Work PC and cloud
+stack"*, then *"Hybrid Agent may assume a customized local agent which may or
+may not already exist"*). The author's own partner is the private
+engineering agent of the 3 November direction, described and never named;
+here it is a role that any user may fill. This is a direction: nothing is
+built in the package until the issue that tracks it is taken up.
+
+- **The stack stays out of the package.** Commands, cloud tools, credentials
+  and models trained on a user's data belong to the partner or to the user's
+  own files. The package ships formats, validation and synthetic samples,
+  never a recipe or a trained model for a real stack.
+- **Three terms, kept apart:**
+  - A **recipe** is a fixed, linear list of concrete steps on one stack that
+    stops at its first failure. It lives in the partner.
+  - A **meta-recipe** is a fixed, linear list of stack-agnostic evidence
+    steps, for example a service's deploy record and its metrics for an hour
+    either side. It lives here, as data, and has no branches.
+  - A **workflow** is this agent's own route from a question to a verified
+    report, with branches and state. It stays in code, one per investigation
+    type, each arriving with its own end-to-end scenario (ruling 13). Every
+    branch is decided by code, or by a decision model above its threshold
+    in code (ruling 5); never by the LLM (ruling 2). A meta-recipe is one
+    step inside a workflow. Workflows written as user files would need a
+    branching language, which ruling 11 defers.
+- **The partner is described in a local configuration file** in the user's
+  home folder, read with the standard library (`tomllib`), never committed;
+  the repository ships a sample with an invented stack (the author: *"on my
+  work PC can add a config for my Hybrid Agent to know about my [own
+  agent]"*). It names the folder the partner writes evidence to, binds each
+  meta-recipe step to one of the partner's recipes by name, marks which of
+  those recipes are read-only, and describes each decision model the
+  partner runs: its labels, its threshold and where its output lands.
+- **Two ways to hand work over, both allowed** (the author: *"the Hybrid
+  agent could drop files for the local agent or call it directly from the
+  command line, or both"*, then *"Both, narrowed"*):
+  - **Files.** The agent writes a request file naming the meta-recipe and
+    its bound recipes, and the partner or the user picks it up.
+  - **A direct call, narrowed.** The agent may start the configured partner
+    from the command line, only to run a recipe the configuration marks as
+    read-only, only for evidence, and only after the user confirms that call
+    at the prompt. The partner's own approval steps still apply. Fixes,
+    merges, deployments and every other consequential action are proposed,
+    never run.
+- **Both are command-line tools running locally** (the author: *"Command
+  Line Interface, running locally for both, even if they are cloud-aware"*).
+  The partner is reached only as a process on the same machine, or through
+  a folder on it; never as a network service, a hosted agent or a remote
+  endpoint. Either may talk to cloud services on its own account, as the
+  partner's recipes may, but the hand-over between them never leaves the
+  machine, and this agent opens no listener of its own.
+- **Peer-to-peer belongs to `swarm`, not here** (the author: *"peer-to-peer
+  would require the swarm repo using hybrid-agents as peer nodes"*). This
+  agent has one local partner and no peers. A network of agents exchanging
+  beliefs and evidence would be built in `swarm`, with hybrid-agents as its
+  nodes, under that repository's own rulings. Nothing here is built for it in
+  advance (ruling 12).
+- **Without a partner, nothing breaks.** The meta-recipe is printed as a
+  checklist for a person to gather the evidence by hand, which is how the
+  agent works today. Having no partner is the default, like having no model.
+- **A partner's decision model is the partner's.** Its output reaches this
+  agent as a derived result that records which model gave it, the label and
+  the threshold, under the decision-model discipline of 30 October; never as
+  an observation.
+- **This narrows two founding rulings, for this one role:**
+  - **Ruling 9** stands for every consequential action. Starting the
+    configured partner for a confirmed, read-only evidence recipe is the one
+    thing this agent may start.
+  - **Ruling 11's deferral of multi-agent orchestration** is narrowed to
+    allow this hand-over and nothing more: one configured partner, one
+    confirmed call at a time, no channel kept open between the two, no
+    shared memory, and no agent started by the partner. Anything beyond that
+    is still deferred.

@@ -235,6 +235,57 @@ Two contrasting runs (both covered by tests):
   `checkout`/`latency`, which is validated against the allow-lists. The report then lists, as an
   unknown, that the task was inferred by an LLM and should be confirmed.
 
+## Design patterns and principles
+
+This section gives names to designs that are already ruled. It adds no ruling of its own, and
+`docs/decisions.md` decides wherever the two differ. A row with a test names its proof. A row
+marked *direction* comes from the 11 November 2026 ruling *A local partner, recipes and
+workflows* and is not built yet (issue #33).
+
+**Inside the agent**
+
+| Pattern | Where it shows | Proof |
+| --- | --- | --- |
+| Functional core, imperative shell, inverted: a deterministic shell around a probabilistic core | The controller owns state, routing and verification; the LLM only proposes | `tests/test_agent.py::test_parse_hypotheses_accepts_fences_and_fixes_authority_fields` |
+| Tiered (cascade) reasoning | Rules first, then a decision model above its threshold, then the LLM | `tests/test_agent.py::test_parse_request_deterministic_and_ambiguous`, `tests/test_agent.py::test_no_regression_means_no_llm_call` |
+| Proposal and approval gate (human in the loop) | Actions are proposals, and the code sets `executed` and the status | `tests/test_agent.py::test_verify_report_flags_actions_bypassing_approval` |
+| Null object, graceful degradation | A missing model or an unreadable file becomes an unknown; no partner means a checklist (*direction*) | `tests/test_agent.py::test_missing_model_is_reported_not_substituted`, `tests/test_agent.py::test_unreadable_evidence_becomes_an_unknown` |
+| Fail-closed defaults | Every cost limit is 0 out of the box, and a request is refused before it is sent | `tests/test_design_challenges.py::test_a_refusal_names_the_cap_and_what_is_left` |
+| Reservation and a sliding-window limit | The weekly cap reserves the worst case, then refunds what went unused | `tests/test_design_challenges.py::test_the_weekly_cap_holds_when_the_response_is_larger_than_estimated` |
+| Explicit workflow with a trace | Fixed steps, each recorded with the mechanism that ran it | `tests/test_agent.py::test_regression_investigation_end_to_end` |
+
+**With a local partner** (*direction*)
+
+| Pattern | Where it shows |
+| --- | --- |
+| Ports and adapters (hexagonal) | Meta-recipe steps are the ports; the partner's recipes are the adapters, so the agent never learns the stack |
+| Configuration-driven binding | A local, uncommitted partner file binds each port to an adapter on the user's machine |
+| Anti-corruption layer | The evidence folder is the shared format: stack-specific on one side, stack-agnostic on the other |
+| Hot folder (file mailbox) | A request file the partner or the user picks up: asynchronous, inspectable, with nothing kept running |
+| Least privilege, capability allowlist | A direct call may run only recipes the configuration marks read-only, and only for evidence |
+| Defence in depth | Two gates: the user confirms the call here, and the partner applies its own approval |
+| Template, not interpreter | Meta-recipes are linear data; a branching language for workflows is not built (ruling 11) |
+
+**Across agents.** A peer network would not be built here. `swarm` keeps the proposal (its
+ADR-0006): event-sourced revisions, decisions kept apart from writes, provenance carried with
+every report, peers agreeing never counted as evidence, and no memory shared between nodes.
+
+**Principles.**
+- *One job each:* this agent reasons, a local partner runs things, and `swarm` would network them.
+- *The dependency rule:* the stack-agnostic core depends on nothing stack-specific.
+- *KISS, YAGNI and "not for show":* rulings 1, 11 and 12.
+- *Local-first:* both agents run as command-line tools on one machine.
+- *Auditability:* the trace and the five evidence kinds.
+- *Human authority:* consequential actions are only ever proposed.
+
+**Three tensions to watch** when the partner is built:
+- *Approval fatigue.* Two gates per call can turn into reflex clicks. Keep read-only confirmations
+  cheap, and make anything else impossible rather than one more prompt.
+- *Format versions.* The evidence folder and the request file need a version field from the
+  first build.
+- *Trusting the partner.* A partner's output is evidence from a source, with a reliability like
+  any other, never trusted because the user owns it.
+
 ## Deliberately deferred
 
 The following are not included. Each should be added only when a concrete need shows up:
