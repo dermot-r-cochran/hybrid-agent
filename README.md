@@ -110,7 +110,7 @@ second front-matter block. The tests in this table are in `tests/test_agent.py`.
 | No regression means no LLM call | `::test_no_regression_means_no_llm_call` |
 | An ambiguous request goes to the model assigned to `interpret_request`, and the inferred task is listed as an unknown to confirm | `::test_ambiguous_request_routes_to_interpretation_model` |
 | A missing model is reported as an unknown, never replaced by another model | `::test_missing_model_is_reported_not_substituted` |
-| Malformed LLM output and provider errors become unknowns, with no hypotheses and no actions | `::test_malformed_or_failing_llm_output_is_not_trusted` |
+| Malformed LLM output and provider errors become unknowns, with no hypotheses and no actions | `::test_malformed_or_failing_llm_output_is_not_trusted`, `::test_malformed_proposal_shapes_are_rejected`, `::test_valid_json_of_the_wrong_shape_becomes_an_unknown` |
 | An unreadable evidence file becomes an unknown and the run still ends in human review | `::test_unreadable_evidence_becomes_an_unknown` |
 | The diff tool refuses unsafe commit ids and lists deleted files among the changed ones | `::test_diff_tool_rejects_unsafe_commit_ids`, `::test_diff_tool_includes_deleted_files` |
 | Timestamps without a zone are read as UTC | `::test_naive_timestamps_are_treated_as_utc` |
