@@ -119,6 +119,34 @@ def test_parse_hypotheses_accepts_fences_and_fixes_authority_fields() -> None:
         parse_hypotheses('{"hypotheses": "everything is fine"}')
 
 
+@pytest.mark.parametrize(
+    "text",
+    [
+        "[]",  # valid JSON, but an array rather than an object
+        '"all good"',  # valid JSON, but a string rather than an object
+        '{"hypotheses": null}',  # hypotheses must be a list, not null
+        '{"hypotheses": 3}',  # hypotheses must be a list, not a number
+        '{"hypotheses": {}}',  # hypotheses must be a list, and an empty object is not one
+        '{"actions": null}',  # actions must be a list, not null
+        '{"actions": 3}',  # actions must be a list, not a number
+        '{"actions": {}}',  # actions must be a list, and an empty object is not one
+        '{"hypotheses": ["slow"]}',  # a hypothesis must be an object, not a bare string
+        '{"hypotheses": [{"statement": 5}]}',  # the statement must be a string
+        '{"hypotheses": [{}]}',  # the statement is missing
+        '{"hypotheses": [{"statement": "x", "evidence_ids": "diff:a"}]}',  # ids are a string
+        '{"hypotheses": [{"statement": "x", "evidence_ids": [7]}]}',  # an id is not a string
+        '{"actions": ["rollback"]}',  # an action must be an object, not a bare string
+        '{"actions": [{"description": 5}]}',  # the description must be a string
+        '{"actions": [{}]}',  # the description is missing
+        '{"unknowns": "none"}',  # unknowns must be a list, not a string
+        '{"unknowns": [1]}',  # an unknown is not a string
+    ],
+)
+def test_malformed_proposal_shapes_are_rejected(text: str) -> None:
+    with pytest.raises(InvalidLLMOutput):
+        parse_hypotheses(text)
+
+
 # --- verification ----------------------------------------------------------------------
 
 
@@ -189,10 +217,13 @@ def test_verify_report_flags_a_derived_result_whose_inputs_are_missing() -> None
 
 
 def test_diff_tool_rejects_unsafe_commit_ids(tmp_path: Path) -> None:
-    deploy = Evidence(
-        "d", EvidenceKind.OBSERVATION, "deploy_log", "", {"commit": "../../etc/passwd"}
-    )
-    assert DiffTool(tmp_path).run(Task("q", "s", Metric.LATENCY), [deploy]) == []
+    changes = tmp_path / "changes"
+    changes.mkdir()
+    # A real diff one level above the changes directory: only the commit-id check keeps it out.
+    (tmp_path / "secret.diff").write_text("diff --git a/x.py b/x.py\n")
+    for commit in ["../secret", "../../etc/passwd"]:
+        deploy = Evidence("d", EvidenceKind.OBSERVATION, "deploy_log", "", {"commit": commit})
+        assert DiffTool(changes).run(Task("q", "s", Metric.LATENCY), [deploy]) == []
 
 
 # --- end to end ------------------------------------------------------------------------
@@ -274,6 +305,14 @@ def test_malformed_or_failing_llm_output_is_not_trusted() -> None:
     broken = FakeLLM({})
     report = controller({LLMOperation.GENERATE_HYPOTHESES: broken}).investigate(CHECKOUT_Q)
     assert report.hypotheses == [] and any("failed" in u for u in report.unknowns)
+
+
+def test_valid_json_of_the_wrong_shape_becomes_an_unknown() -> None:
+    odd = FakeLLM({"generate_hypotheses": "[]"})
+    report = controller({LLMOperation.GENERATE_HYPOTHESES: odd}).investigate(CHECKOUT_Q)
+    assert report.hypotheses == [] and report.actions == []
+    assert any("malformed" in u for u in report.unknowns)
+    assert report.status == "awaiting_human_review"
 
 
 def test_cli_json_output(capsys: pytest.CaptureFixture[str]) -> None:
