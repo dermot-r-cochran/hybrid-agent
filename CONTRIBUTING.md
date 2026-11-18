@@ -4,7 +4,7 @@ Contributions are welcome: bug reports, fixes, tests, documentation and focused 
 
 ## Before you start
 
-- For anything beyond a small fix, open an issue first describing the problem and the change you have in mind, so the approach can be agreed before you spend time on it.
+- For anything beyond a small fix, you may find it useful to open an issue first describing the problem and the change you have in mind, before you spend time on it.
 - Read `docs/decisions.md` before proposing a new mechanism, dependency, tool or investigation type. Its rulings are binding, including the deferred list.
 - The package has no runtime dependencies, and nothing it does is executed without a human. Those are the design, not limitations to fix.
 
