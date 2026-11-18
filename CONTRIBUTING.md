@@ -4,7 +4,7 @@ Contributions are welcome: bug reports, fixes, tests, documentation and focused 
 
 ## Before you start
 
-- For anything beyond a small fix, open an issue first describing the problem and the change you have in mind, so the approach can be agreed before you spend time on it.
+- For anything beyond a small fix, you may find it useful to open an issue first describing the problem and the change you have in mind, before you spend time on it.
 - Read `docs/decisions.md` before proposing a new mechanism, dependency, tool or investigation type. Its rulings are binding, including the deferred list.
 - The package has no runtime dependencies, and nothing it does is executed without a human. Those are the design, not limitations to fix.
 
@@ -39,4 +39,4 @@ Contributions are accepted under this repository's licence, the MIT License (`LI
 
 ## Security
 
-Please don't describe a security problem in a public issue. Open an issue saying only that you have one, and a private way to send the details will be arranged.
+Please don't describe a security problem in a public issue or pull request. Report it privately instead, through the repository's **Security** tab (*Report a vulnerability*). Only the maintainer sees the report.
