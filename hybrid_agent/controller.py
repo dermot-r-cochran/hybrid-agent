@@ -1,8 +1,11 @@
 """Deterministic controller: owns workflow state, routing and model choice.
 
-Which mechanism handles each operation is decided here, in code. The LLM is
-called only for semantic work, and only when earlier deterministic steps show
-it is needed. Each LLM operation is sent to the model assigned to it.
+Which mechanism handles each operation is decided here, in code. The workflow
+is a registry of declared specialists working on one shared board, and a rule
+(``specialists.choose``) picks the next one; no model takes part in that
+choice. The LLM is called only for semantic work, and only when earlier
+deterministic steps show it is needed. Each LLM operation is sent to the model
+assigned to it.
 """
 
 from __future__ import annotations
@@ -26,7 +29,8 @@ from .llm import (
     parse_hypotheses,
     parse_task,
 )
-from .models import Evidence, EvidenceKind, Mechanism, Metric, Report, Step, Task
+from .models import Evidence, EvidenceKind, Hypothesis, Mechanism, Metric, Report, Step, Task
+from .specialists import Board, Cost, Policy, Specialist, choose
 from .tools import Tool, find_deploy, parse_timestamp
 from .verify import verify_report
 
@@ -36,6 +40,7 @@ ROUTES: dict[str, Mechanism] = {
     "gather_evidence": Mechanism.DETERMINISTIC,
     "compare_windows": Mechanism.COMPUTATION,
     "detect_regression": Mechanism.DETERMINISTIC,
+    "propose_from_deploy": Mechanism.DETERMINISTIC,
     LLMOperation.GENERATE_HYPOTHESES.value: Mechanism.LLM,
     "verify": Mechanism.DETERMINISTIC,
 }
@@ -66,20 +71,20 @@ class Controller:
         tools: Sequence[Tool],
         services: Iterable[str],
         models: Mapping[LLMOperation, LLM] | None = None,
+        policy: Policy = Policy.LLM_HYPOTHESES,
     ) -> None:
         self.tools = list(tools)
         self.services = sorted(services)
         self.models = dict(models or {})
+        self.policy = policy
+        self.specialists = self._registry()
 
     def investigate(self, request: str) -> Report:
         report = Report(request=request)
-        task = self._task(request, report)
-        if task is not None:
-            report.task = task
-            self._gather(task, report)
-            comparison = self._compute(task, report)
-            if comparison is not None and self._detect(task, comparison, report):
-                self._hypothesise(task, report)
+        board = Board(report=report)
+        while (specialist := choose(board, self.specialists)) is not None:
+            board.done.append(specialist.name)
+            specialist.run(board)
         report.verification_issues = verify_report(report)
         failed = sum(1 for h in report.hypotheses if not h.passed_checks)
         self._step(
@@ -89,6 +94,102 @@ class Controller:
             f"{len(report.verification_issues)} report-level issues",
         )
         return report
+
+    # --- the registry ----------------------------------------------------------
+
+    def _registry(self) -> list[Specialist]:
+        """Every specialist, in registry order. Readiness is read from the board."""
+
+        def regressed(b: Board) -> bool:
+            return b.regression is True
+
+        def llm_hypotheses_ready(b: Board) -> bool:
+            if not regressed(b):
+                return False
+            if self.policy is Policy.LLM_HYPOTHESES:
+                return True
+            return b.ran("propose_from_deploy") and not b.report.hypotheses
+
+        def needs_task(b: Board) -> Task:
+            assert b.task is not None  # guaranteed by the specialist's ready rule
+            return b.task
+
+        def set_task(b: Board, task: Task | None) -> None:
+            b.task = task
+            b.report.task = task
+
+        def set_comparison(b: Board) -> None:
+            b.comparison = self._compute(needs_task(b), b.report)
+
+        def set_regression(b: Board) -> None:
+            assert b.comparison is not None
+            b.regression = self._detect(needs_task(b), b.comparison, b.report)
+
+        return [
+            Specialist(
+                "parse_request",
+                "request to task",
+                Mechanism.DETERMINISTIC,
+                Cost.FREE,
+                False,
+                ready=lambda b: b.task is None,
+                run=lambda b: set_task(b, self._parse(b.report)),
+            ),
+            Specialist(
+                LLMOperation.INTERPRET_REQUEST.value,
+                "request to task",
+                Mechanism.LLM,
+                Cost.MODEL,
+                True,
+                ready=lambda b: b.ran("parse_request") and b.task is None,
+                run=lambda b: set_task(b, self._interpret(b.report)),
+            ),
+            Specialist(
+                "gather_evidence",
+                "observations",
+                Mechanism.DETERMINISTIC,
+                Cost.FREE,
+                False,
+                ready=lambda b: b.task is not None,
+                run=lambda b: self._gather(needs_task(b), b.report),
+            ),
+            Specialist(
+                "compare_windows",
+                "derived result",
+                Mechanism.COMPUTATION,
+                Cost.COMPUTE,
+                False,
+                ready=lambda b: b.ran("gather_evidence"),
+                run=set_comparison,
+            ),
+            Specialist(
+                "detect_regression",
+                "decision",
+                Mechanism.DETERMINISTIC,
+                Cost.FREE,
+                False,
+                ready=lambda b: b.comparison is not None,
+                run=set_regression,
+            ),
+            Specialist(
+                "propose_from_deploy",
+                "hypotheses",
+                Mechanism.DETERMINISTIC,
+                Cost.FREE,
+                False,
+                ready=lambda b: regressed(b) and self.policy is Policy.RULES_FIRST,
+                run=lambda b: self._propose_from_deploy(needs_task(b), b.report),
+            ),
+            Specialist(
+                LLMOperation.GENERATE_HYPOTHESES.value,
+                "hypotheses",
+                Mechanism.LLM,
+                Cost.MODEL,
+                True,
+                ready=llm_hypotheses_ready,
+                run=lambda b: self._hypothesise(needs_task(b), b.report),
+            ),
+        ]
 
     # --- steps ---------------------------------------------------------------
 
@@ -112,14 +213,18 @@ class Controller:
         self._step(report, operation.value, f"model={model.name}", True)
         return text
 
-    def _task(self, request: str, report: Report) -> Task | None:
-        task = parse_request(request, self.services)
+    def _parse(self, report: Report) -> Task | None:
+        task = parse_request(report.request, self.services)
         if task is not None:
             self._step(
                 report, "parse_request", f"service={task.service}, metric={task.metric.value}"
             )
             return task
         self._step(report, "parse_request", "ambiguous; semantic interpretation needed")
+        return None
+
+    def _interpret(self, report: Report) -> Task | None:
+        request = report.request
         op = LLMOperation.INTERPRET_REQUEST
         text = self._call_llm(report, op, interpret_request_prompt(request, self.services))
         if text is None:
@@ -209,3 +314,41 @@ class Controller:
         report.hypotheses.extend(proposal.hypotheses)
         report.unknowns.extend(proposal.unknowns)
         report.actions.extend(proposal.actions)
+
+    def _propose_from_deploy(self, task: Task, report: Report) -> None:
+        """A rule-based hypothesis: the regression started with the latest deploy.
+
+        It claims timing only, from evidence already gathered and computed; which
+        change in the deploy is responsible is left as an unknown.
+        """
+        deploy = find_deploy(report.observations)
+        derived = next(iter(report.derived), None)
+        if deploy is None or derived is None:
+            self._step(report, "propose_from_deploy", "skipped: needs a deploy and a comparison")
+            return
+        diff = next((e for e in report.observations if e.source == "diff"), None)
+        files = list(diff.data.get("files_changed", [])) if diff is not None else []
+        change = f", which changed {', '.join(files)}" if files else ""
+        d = derived.data
+        if task.metric is Metric.LATENCY:
+            movement = f"p95 went from {d['p95_before_ms']} ms to {d['p95_after_ms']} ms"
+        else:
+            movement = (
+                f"the error rate went from {d['error_rate_before_pct']}% "
+                f"to {d['error_rate_after_pct']}%"
+            )
+        cited = [deploy.id, *([diff.id] if diff is not None else []), derived.id]
+        report.hypotheses.append(
+            Hypothesis(
+                statement=(
+                    f"The regression begins with deploy {deploy.data['version']} "
+                    f"(commit {deploy.data['commit']}){change}; {movement} after it."
+                ),
+                evidence_ids=cited,
+            )
+        )
+        report.unknowns.append(
+            "propose_from_deploy links the regression to the deploy by timing only; "
+            "which change in it is responsible is not decided by rule"
+        )
+        self._step(report, "propose_from_deploy", "1 hypothesis from deploy timing")

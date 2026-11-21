@@ -506,3 +506,39 @@ built in the package until the issue that tracks it is taken up.
     confirmed call at a time, no channel kept open between the two, no
     shared memory, and no agent started by the partner. Anything beyond that
     is still deferred.
+
+## Specialists, a board and a rule-based arbitrator, 21 November 2026
+
+The first slice of issue #38 (a headless reference architecture: specialised
+mechanisms composed through shared state and explicit arbitration, with no
+privileged LLM), started at the author's word (*"Yes, start #38"*). Research
+question #39; decomposition questions #40.
+
+- **The controller's workflow is a registry of declared specialists**
+  (`hybrid_agent/specialists.py`). Each declares its capability, mechanism,
+  cost class and whether data leaves the machine (true only for a model call).
+  They read and write one shared `Board`, whose record is the `Report`.
+- **A rule in code picks the next specialist**: the cheapest ready one not yet
+  run, registry order on ties, each at most once per investigation. No model
+  takes part in the choice. This is the founding "deterministic controller"
+  (rulings 1 and 2) made explicit, not a new authority.
+- **A foundation model is one specialist among others.** Under the
+  `rules_first` policy a rule-based specialist (`propose_from_deploy`) proposes
+  a hypothesis from evidence already gathered and computed, and the LLM is
+  consulted for hypotheses only if it proposed nothing. The worked example then
+  completes with no model call, and the rule's hypothesis passes the same
+  verification as the LLM's. The rule claims timing only; which change is
+  responsible stays an unknown.
+- **The founding behaviour is the default.** The default policy
+  (`llm_hypotheses`) produces the same trace and report as before this change;
+  `rules_first` is chosen per run (`--rules-first`).
+- **This narrows ruling 11 for one thing.** Arbitration among specialists in
+  one process, sharing one board, is not multi-agent orchestration: there is
+  one agent, one process, no channel between agents and no agent started by
+  another. Multi-agent orchestration stays deferred, as narrowed on
+  11 November. A new specialist is added for a concrete need (ruling 12), not
+  to fill the registry.
+- **Not built in this slice, and not proposed without a need:** contradictions
+  held side by side on the board, per-claim uncertainty, health or latency
+  declarations used by the arbitrator, and specialists outside the one
+  investigation type (ruling 13).
