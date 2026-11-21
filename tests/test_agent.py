@@ -5,7 +5,7 @@ import pytest
 
 from hybrid_agent.__main__ import load_scripted_llm, main
 from hybrid_agent.compute import InsufficientData, compare_windows, is_regression, percentile
-from hybrid_agent.controller import Controller, parse_request
+from hybrid_agent.controller import ROUTES, Controller, parse_request
 from hybrid_agent.llm import FakeLLM, InvalidLLMOutput, LLMOperation, parse_hypotheses, parse_task
 from hybrid_agent.models import (
     Evidence,
@@ -18,6 +18,7 @@ from hybrid_agent.models import (
     Task,
 )
 from hybrid_agent.report import render
+from hybrid_agent.specialists import Board, Cost, Policy, Specialist, choose
 from hybrid_agent.tools import DiffTool, local_tools, parse_timestamp
 from hybrid_agent.verify import verify_hypothesis, verify_report
 
@@ -321,6 +322,83 @@ def test_cli_json_output(capsys: pytest.CaptureFixture[str]) -> None:
     out = json.loads(capsys.readouterr().out)
     assert out["status"] == "awaiting_human_review"
     assert [h["passed_checks"] for h in out["hypotheses"]] == [True, False]
+
+
+# --- specialists and arbitration --------------------------------------------------------
+
+
+def test_rules_first_completes_with_no_model_call() -> None:
+    metrics, tools = local_tools(EVIDENCE)
+    report = Controller(tools, metrics.services(), None, Policy.RULES_FIRST).investigate(CHECKOUT_Q)
+    assert [h.passed_checks for h in report.hypotheses] == [True]
+    assert report.hypotheses[0].evidence_ids == [
+        "deploy:checkout:4.12.0",
+        "diff:a3c91f4",
+        "derived:checkout:before_after_deploy",
+    ]
+    assert not any(s.called_model for s in report.trace)
+    ops = [s.operation for s in report.trace]
+    assert "propose_from_deploy" in ops and "generate_hypotheses" not in ops
+    assert not any("needed an LLM" in u for u in report.unknowns)
+    assert report.status == "awaiting_human_review" and not report.actions
+
+
+def test_rules_first_leaves_an_assigned_model_unused_when_the_rules_suffice() -> None:
+    small, strong, models = per_operation_models()
+    metrics, tools = local_tools(EVIDENCE)
+    Controller(tools, metrics.services(), models, Policy.RULES_FIRST).investigate(CHECKOUT_Q)
+    assert small.calls == [] and strong.calls == []
+
+
+def test_rules_first_consults_the_model_when_the_rules_propose_nothing() -> None:
+    small, strong, models = per_operation_models()
+    metrics, tools = local_tools(EVIDENCE)
+    ctrl = Controller(tools, metrics.services(), models, Policy.RULES_FIRST)
+    board = Board(report=Report(request=CHECKOUT_Q), regression=True)
+    board.done.append("propose_from_deploy")  # ran and proposed nothing
+    llm = next(s for s in ctrl.specialists if s.name == "generate_hypotheses")
+    assert llm.ready(board)
+    board.report.hypotheses.append(Hypothesis("x", ["y"]))
+    assert not llm.ready(board)
+
+
+def test_arbitrator_prefers_the_cheapest_ready_specialist_and_runs_each_once() -> None:
+    order: list[str] = []
+
+    def spec(name: str, cost: Cost) -> Specialist:
+        return Specialist(
+            name,
+            "c",
+            Mechanism.DETERMINISTIC,
+            cost,
+            False,
+            ready=lambda b: True,
+            run=lambda b: order.append(name),
+        )
+
+    specs = [spec("model", Cost.MODEL), spec("free_a", Cost.FREE), spec("free_b", Cost.FREE)]
+    board = Board(report=Report(request="q"))
+    while (s := choose(board, specs)) is not None:
+        board.done.append(s.name)
+        s.run(board)
+    assert order == ["free_a", "free_b", "model"]
+
+
+def test_every_specialist_declares_its_mechanism_cost_and_data_boundary() -> None:
+    metrics, tools = local_tools(EVIDENCE)
+    for policy in Policy:
+        for s in Controller(tools, metrics.services(), None, policy).specialists:
+            assert ROUTES[s.name] is s.mechanism
+            is_model = s.mechanism is Mechanism.LLM
+            assert (s.cost is Cost.MODEL) == is_model
+            assert s.data_leaves_machine == is_model
+
+
+def test_cli_rules_first_runs_with_no_model(capsys: pytest.CaptureFixture[str]) -> None:
+    assert main([CHECKOUT_Q, "--evidence", str(EVIDENCE), "--rules-first", "--json"]) == 0
+    out = json.loads(capsys.readouterr().out)
+    assert [h["passed_checks"] for h in out["hypotheses"]] == [True]
+    assert not any(step["called_model"] for step in out["trace"])
 
 
 # --- the manual ------------------------------------------------------------------------

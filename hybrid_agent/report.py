@@ -16,7 +16,7 @@ def render(report: Report) -> str:
     out.append("\nDERIVED RESULTS (computed)")
     out += [f"  [{e.id}] {e.summary}" for e in report.derived] or ["  none"]
 
-    out.append("\nHYPOTHESES (LLM proposals, not evidence)")
+    out.append("\nHYPOTHESES (proposals, not evidence)")
     for i, h in enumerate(report.hypotheses, 1):
         verdict = "passed checks" if h.passed_checks else "FAILED checks"
         out.append(f"  H{i} [{verdict}] {h.statement}")

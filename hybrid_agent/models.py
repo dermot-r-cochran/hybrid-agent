@@ -49,7 +49,7 @@ class Evidence:
 
 @dataclass
 class Hypothesis:
-    """An LLM proposal. Never treated as evidence."""
+    """A proposal, from the LLM or a rule. Never treated as evidence."""
 
     statement: str
     evidence_ids: list[str]

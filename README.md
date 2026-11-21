@@ -14,13 +14,16 @@ before a human sees it. Nothing is executed. The human makes the decisions.
 
 ```
 Engineer request
-  -> deterministic controller (hybrid_agent/controller.py)
+  -> deterministic controller (hybrid_agent/controller.py): declared specialists on one
+     shared board; a rule picks the cheapest ready one (specialists.py)
        parse_request        deterministic   keyword/allow-list rules
        interpret_request    LLM             only if the rules find the request ambiguous
        gather_evidence      deterministic   pluggable local tools (tools.py)
        compare_windows      computation     percentiles / error rates (compute.py)
        detect_regression    deterministic   explicit threshold rule
-       generate_hypotheses  LLM             only if a regression was detected
+       propose_from_deploy  deterministic   rules_first only: a timing hypothesis by rule
+       generate_hypotheses  LLM             only if a regression was detected (under
+                                            rules_first, only if the rule proposed nothing)
   -> deterministic verification (verify.py)
   -> report for human review (report.py), status = awaiting_human_review
 ```
@@ -32,9 +35,10 @@ Engineer request
 | `compute.py` | Statistics and the regression rules. All numbers are computed here, not by the LLM. |
 | `llm.py` | `LLM` protocol, `FakeLLM`, prompts, strict JSON parsing, per-operation model requirements. |
 | `verify.py` | Checks hypotheses and report invariants. |
-| `controller.py` | Routing table, workflow, model assignment, audit trace. |
+| `specialists.py` | The `Specialist` declaration, the shared `Board`, the `rules_first` and `llm_hypotheses` policies, and `choose`, the rule-based arbitrator. |
+| `controller.py` | Routing table, the specialist registry, model assignment, audit trace. |
 | `report.py` | Plain-text rendering of a report for human review. The report text under *Worked example* is its output. |
-| `__main__.py` | Command-line entry point: `python -m hybrid_agent "<question>" --evidence DIR`, with `--llm-script` for scripted responses and `--json` for the report as JSON. |
+| `__main__.py` | Command-line entry point: `python -m hybrid_agent "<question>" --evidence DIR`, with `--llm-script` for scripted responses, `--rules-first` to propose hypotheses by rule before any model, and `--json` for the report as JSON. |
 
 ### Choosing a model for each LLM operation
 
@@ -116,6 +120,10 @@ second front-matter block. The tests in this table are in `tests/test_agent.py`.
 | Timestamps without a zone are read as UTC | `::test_naive_timestamps_are_treated_as_utc` |
 | `--json` prints the report with the same verdicts as the text run | `::test_cli_json_output` |
 | The text report shown under *Worked example* is what the command prints, line for line, so a change to the output must change the README in the same commit | `::test_worked_example_transcript_matches_readme` |
+| Under `rules_first` the worked example completes with no model call, and the rule's hypothesis passes verification | `::test_rules_first_completes_with_no_model_call`, `::test_cli_rules_first_runs_with_no_model` |
+| Under `rules_first` an assigned model is left unused when the rule proposes a hypothesis, and is consulted only if it proposes none | `::test_rules_first_leaves_an_assigned_model_unused_when_the_rules_suffice`, `::test_rules_first_consults_the_model_when_the_rules_propose_nothing` |
+| The arbitrator picks the cheapest ready specialist, registry order on ties, and runs each once | `::test_arbitrator_prefers_the_cheapest_ready_specialist_and_runs_each_once` |
+| Every specialist declares a mechanism matching the routing table, and only model calls are costed as such or send data off the machine | `::test_every_specialist_declares_its_mechanism_cost_and_data_boundary` |
 | Decision (classification) models | no test yet (none is built; see the section above) |
 
 ## Design challenges
@@ -193,7 +201,7 @@ OBSERVATIONS (read by tools)
 DERIVED RESULTS (computed)
   [derived:checkout:before_after_deploy] p95 125.3 ms -> 286.4 ms (+128.6%); error rate 2.5% -> 1.67%
 
-HYPOTHESES (LLM proposals, not evidence)
+HYPOTHESES (proposals, not evidence)
   H1 [passed checks] Commit a3c91f4 replaced the single get_stock_bulk call in checkout/pricing.py with a get_stock call per cart item (an N+1 pattern), so request time now grows with cart size; this fits p95 rising from 125.3 ms to 286.4 ms after the deploy.
       cites: diff:a3c91f4, derived:checkout:before_after_deploy
   H2 [FAILED checks] A new retry policy in checkout/db.yaml is exhausting the connection pool, increasing latency by 300%.
@@ -307,6 +315,9 @@ The following are not included. Each should be added only when a concrete need s
   by magnitude only, so a claim like "fell by 128%" is not caught when the value actually rose.
   File checks only recognise common source-file extensions. None of these checks can confirm
   that a causal claim is correct.
+- The rule-based hypothesis (`propose_from_deploy`, under `rules_first`) links a regression to the
+  latest deploy by timing only. It lists the files the deploy changed but does not say which change
+  is responsible; that is left as an unknown for a person or a model.
 - The evidence and LLM responses are mocks, so they show how the system behaves, not how well a
   real model performs.
 

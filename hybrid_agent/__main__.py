@@ -9,6 +9,7 @@ from pathlib import Path
 from .controller import Controller
 from .llm import LLM, FakeLLM, LLMOperation
 from .report import render
+from .specialists import Policy
 from .tools import local_tools
 
 
@@ -30,6 +31,11 @@ def main(argv: list[str] | None = None) -> int:
         help="JSON file of scripted LLM responses per operation (no real provider is bundled)",
     )
     parser.add_argument("--json", action="store_true", help="print the report as JSON")
+    parser.add_argument(
+        "--rules-first",
+        action="store_true",
+        help="propose hypotheses by rule first; consult the LLM only if the rules propose none",
+    )
     args = parser.parse_args(argv)
 
     metrics, tools = local_tools(args.evidence)
@@ -37,7 +43,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.llm_script:
         scripted = load_scripted_llm(args.llm_script)
         models = {op: scripted for op in LLMOperation}
-    report = Controller(tools, metrics.services(), models).investigate(args.request)
+    policy = Policy.RULES_FIRST if args.rules_first else Policy.LLM_HYPOTHESES
+    report = Controller(tools, metrics.services(), models, policy).investigate(args.request)
     print(json.dumps(report.to_dict(), indent=2) if args.json else render(report))
     return 0
 
