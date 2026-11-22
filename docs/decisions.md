@@ -542,3 +542,19 @@ question #39; decomposition questions #40.
   held side by side on the board, per-claim uncertainty, health or latency
   declarations used by the arbitrator, and specialists outside the one
   investigation type (ruling 13).
+
+## Research direction: edge AI, 22 November 2026
+
+The author, verbatim: *"Edge AI as the overall research direction for my
+engineering repos"*. Embodied AI (robots and cobots) and cognitive
+engineering are read as parts of that direction, not beside it.
+
+- **What it means here.** When a change has a choice of direction, prefer the
+  one that serves edge use: small or local models, investigations that run
+  with no model at all (`--rules-first` already does), tight compute, memory
+  and power budgets, latency, offline operation. This sits naturally with
+  ruling 1, the simplest reliable mechanism for each part.
+- **What it does not change.** It is a direction, not a rewrite. The founding
+  rulings, the deferred list in ruling 11 as narrowed, the one weekly cap and
+  the stack-agnostic stance all stand. Nothing in the code changes with this
+  entry, and no hardware, model or host is chosen by it.
