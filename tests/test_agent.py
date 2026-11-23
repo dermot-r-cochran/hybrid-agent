@@ -1,4 +1,5 @@
 import json
+import tracemalloc
 from pathlib import Path
 
 import pytest
@@ -225,6 +226,27 @@ def test_diff_tool_rejects_unsafe_commit_ids(tmp_path: Path) -> None:
     for commit in ["../secret", "../../etc/passwd"]:
         deploy = Evidence("d", EvidenceKind.OBSERVATION, "deploy_log", "", {"commit": commit})
         assert DiffTool(changes).run(Task("q", "s", Metric.LATENCY), [deploy]) == []
+
+
+def test_metrics_tool_holds_each_sample_once(tmp_path: Path) -> None:
+    # Edge footprint (22 November 2026): the parsed CSV rows must not be held
+    # beside the typed samples, so the peak is close to what the samples keep.
+    lines = ["timestamp,service,latency_ms,status"]
+    for i in range(20_000):
+        service = "checkout" if i % 2 else "search"
+        lines.append(f"2026-10-27T10:{i % 60:02d}:00Z,{service},{i}.5,200")
+    (tmp_path / "metrics.csv").write_text("\n".join(lines) + "\n")
+    metrics, _ = local_tools(tmp_path)
+    tracemalloc.start()
+    try:
+        [found] = metrics.run(Task("q", "checkout", Metric.LATENCY), [])
+        held, peak = tracemalloc.get_traced_memory()
+    finally:
+        tracemalloc.stop()
+    samples = found.data["samples"]
+    assert len(samples) == 10_000
+    assert samples[0] == {"timestamp": "2026-10-27T10:01:00Z", "latency_ms": 1.5, "status": 200}
+    assert peak < 1.3 * held
 
 
 # --- end to end ------------------------------------------------------------------------
