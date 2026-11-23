@@ -117,6 +117,7 @@ second front-matter block. The tests in this table are in `tests/test_agent.py`.
 | Malformed LLM output and provider errors become unknowns, with no hypotheses and no actions | `::test_malformed_or_failing_llm_output_is_not_trusted`, `::test_malformed_proposal_shapes_are_rejected`, `::test_valid_json_of_the_wrong_shape_becomes_an_unknown` |
 | An unreadable evidence file becomes an unknown and the run still ends in human review | `::test_unreadable_evidence_becomes_an_unknown` |
 | The diff tool refuses unsafe commit ids and lists deleted files among the changed ones | `::test_diff_tool_rejects_unsafe_commit_ids`, `::test_diff_tool_includes_deleted_files` |
+| The metrics tool reads the CSV in one pass and holds each sample once, never the parsed rows beside it, so peak memory stays close to what the samples keep | `::test_metrics_tool_holds_each_sample_once` |
 | Timestamps without a zone are read as UTC | `::test_naive_timestamps_are_treated_as_utc` |
 | `--json` prints the report with the same verdicts as the text run | `::test_cli_json_output` |
 | The text report shown under *Worked example* is what the command prints, line for line, so a change to the output must change the README in the same commit | `::test_worked_example_transcript_matches_readme` |

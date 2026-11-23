@@ -74,18 +74,22 @@ class MetricsTool:
             return {row["service"] for row in csv.DictReader(f)}
 
     def run(self, task: Task, prior: Sequence[Evidence]) -> list[Evidence]:
+        # One pass, keeping only the typed sample: the parsed CSV rows are not
+        # held alongside the samples, which halves peak memory on a large file
+        # (an edge measurement, 22 November 2026). Every sample is still kept,
+        # because the percentiles in compute.py are exact.
         with self.path.open(newline="") as f:
-            rows = [r for r in csv.DictReader(f) if r["service"] == task.service]
-        if not rows:
+            samples = [
+                {
+                    "timestamp": r["timestamp"],
+                    "latency_ms": float(r["latency_ms"]),
+                    "status": int(r["status"]),
+                }
+                for r in csv.DictReader(f)
+                if r["service"] == task.service
+            ]
+        if not samples:
             return []
-        samples = [
-            {
-                "timestamp": r["timestamp"],
-                "latency_ms": float(r["latency_ms"]),
-                "status": int(r["status"]),
-            }
-            for r in rows
-        ]
         return [
             Evidence(
                 id=f"metrics:{task.service}",
